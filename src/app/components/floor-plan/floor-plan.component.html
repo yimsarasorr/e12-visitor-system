@@ -1,0 +1,6 @@
+<div class="view-toggle-container">
+  <button (click)="toggleView()">
+    {{ currentView === 'game' ? 'Floor Plan View' : 'Game View' }}
+  </button>
+</div>
+<canvas #canvas></canvas>
