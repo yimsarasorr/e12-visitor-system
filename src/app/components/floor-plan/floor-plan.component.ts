@@ -17,21 +17,22 @@ export class FloorPlanComponent implements AfterViewInit {
   private renderer!: THREE.WebGLRenderer;
   private controls!: OrbitControls;
 
-  private wallHeight = 30;
-  private wallThickness = 2;
-  private frustumSize = 400;
+  private wallHeight = 3;
+  private wallThickness = 0.2;
+  private frustumSize = 100;
 
   private player!: THREE.Mesh;
-  private playerSize = 5;
-  private playerSpeed = 0.5;
+  private playerSize = 0.5;
+  private playerSpeed = 0.1;
   private wallMeshes: THREE.Mesh[] = [];
   private objectMeshes: THREE.Mesh[] = [];
-  
+
+  private readonly WING_LENGTH = 39;
+  private readonly BUILDING_WIDTH = 18;
+  private readonly LOBBY_LENGTH = 14;
+
   private keys = {
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false
+    ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
   };
 
   public currentView: 'game' | 'top' = 'game';
@@ -43,6 +44,11 @@ export class FloorPlanComponent implements AfterViewInit {
     this.startRenderingLoop();
   }
 
+  toggleView(): void {
+    this.currentView = this.currentView === 'game' ? 'top' : 'game';
+    this.updateCameraPosition();
+  }
+
   private get canvas(): HTMLCanvasElement {
     return this.canvasRef.nativeElement;
   }
@@ -52,42 +58,25 @@ export class FloorPlanComponent implements AfterViewInit {
     this.scene.background = new THREE.Color(0xEBF0F5);
     const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
     this.camera = new THREE.OrthographicCamera(
-      this.frustumSize * aspect / -2, 
-      this.frustumSize * aspect / 2, 
-      this.frustumSize / 2, 
-      this.frustumSize / -2, 
-      1, 1000
+      this.frustumSize * aspect / -2, this.frustumSize * aspect / 2, this.frustumSize / 2, this.frustumSize / -2, 1, 1000
     );
-    
-    this.camera.position.set(-120, 180, -185);
-    
+    this.camera.position.set(-20, 18, -25);
+
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
     this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    
+
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.target.set(0, 0, -65);
+    this.controls.target.set(0, 0, -6);
   }
-  
+
   private loadFloorPlan(): void {
     const floorGroup = new THREE.Group();
-    
-    const wallMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x556677,
-      transparent: false,
-      opacity: 1.0
-    });
-    
-    const objectMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0x445566,
-      transparent: false,
-      opacity: 1.0
-    });
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x556677 });
+    const objectMaterial = new THREE.MeshStandardMaterial({ color: 0x445566 });
 
-    // สร้างพื้น
     floorData.areas.forEach(area => {
       const width = area.boundary.max.x - area.boundary.min.x;
       const depth = area.boundary.max.y - area.boundary.min.y;
@@ -95,109 +84,111 @@ export class FloorPlanComponent implements AfterViewInit {
       const floorMat = new THREE.MeshStandardMaterial({ color: area.color || 0xffffff });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
-      floor.position.set(area.boundary.min.x + width / 2, 0.1, area.boundary.min.y + depth / 2);
+      floor.position.set(area.boundary.min.x + width / 2, 0.01, area.boundary.min.y + depth / 2);
       floorGroup.add(floor);
     });
 
-    // สร้างกำแพงจาก walls array
     if ((floorData as any).walls) {
-      (floorData as any).walls.forEach((wall: any, index: number) => {
+      (floorData as any).walls.forEach((wall: any) => {
         const start = new THREE.Vector3(wall.start.x, 0, wall.start.y);
         const end = new THREE.Vector3(wall.end.x, 0, wall.end.y);
         const wallMesh = this.buildWallMesh(start, end, this.wallHeight, wallMaterial);
-        this.wallMeshes.push(wallMesh); // เก็บ wall mesh สำหรับ collision
+        this.wallMeshes.push(wallMesh);
         floorGroup.add(wallMesh);
       });
     }
 
-    // สร้าง object (ลิฟต์, ห้องน้ำ, บันได) จาก json จ้า
     floorData.objects.forEach(obj => {
       const width = obj.boundary.max.x - obj.boundary.min.x;
       const depth = obj.boundary.max.y - obj.boundary.min.y;
       const geo = new THREE.BoxGeometry(width, this.wallHeight, depth);
       const mesh = new THREE.Mesh(geo, objectMaterial);
       mesh.position.set(obj.boundary.min.x + width/2, this.wallHeight/2, obj.boundary.min.y + depth/2);
-      this.objectMeshes.push(mesh); // เก็บ object mesh สำหรับ collision
+      this.objectMeshes.push(mesh);
       floorGroup.add(mesh);
     });
 
-    // Grid และแสง
-    const gridHelper = new THREE.GridHelper(600, 60);
+    const gridHelper = new THREE.GridHelper(100, 100);
     this.scene.add(gridHelper);
+
+    this.addScaleLabel(50, 50, "1 ช่อง = 1 เมตร");
+    this.addScaleLabel(-40, -5, `ปีกซ้าย: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
+    this.addScaleLabel(40, -5, `ปีกขวา: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
+    this.addScaleLabel(0, 0, `โถงกลาง: ${this.LOBBY_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
+
     this.scene.add(floorGroup);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     this.scene.add(ambientLight);
-    
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(-100, 200, -100);
+    directionalLight.position.set(-10, 20, -10);
     directionalLight.castShadow = true;
     this.scene.add(directionalLight);
-    
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    directionalLight2.position.set(100, 150, 100);
-    this.scene.add(directionalLight2);
+  }
+
+  private addScaleLabel(x: number, z: number, text: string): void {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#000000';
+      context.font = '24px Arial';
+      context.fillText(text, 10, 40);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+
+      const geometry = new THREE.PlaneGeometry(8, 2);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, 0.5, z);
+      mesh.rotation.x = -Math.PI / 2;
+      this.scene.add(mesh);
+    }
   }
 
   private createPlayer(): void {
-    const playerGeometry = new THREE.CylinderGeometry(this.playerSize/2, this.playerSize/2, this.playerSize);
+    const playerGeometry = new THREE.CylinderGeometry(this.playerSize/2, this.playerSize/2, this.playerSize * 2);
     const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff4444 });
     this.player = new THREE.Mesh(playerGeometry, playerMaterial);
-    this.player.position.set(0, this.playerSize/2, 0); // วางใน lobby
+    this.player.position.set(0, this.playerSize, 0);
     this.player.castShadow = true;
     this.scene.add(this.player);
   }
 
   private updatePlayer(): void {
     if (!this.player) return;
-
     const moveVector = new THREE.Vector3(0, 0, 0);
-    
-    // ทิศทาง
-    if (this.keys.ArrowUp) moveVector.z += this.playerSpeed;
-    if (this.keys.ArrowDown) moveVector.z -= this.playerSpeed;
+    if (this.keys.ArrowUp) moveVector.z -= this.playerSpeed;
+    if (this.keys.ArrowDown) moveVector.z += this.playerSpeed;
     if (this.keys.ArrowLeft) moveVector.x -= this.playerSpeed;
     if (this.keys.ArrowRight) moveVector.x += this.playerSpeed;
 
-    if (moveVector.length() > 0) {
-      // คำนวณตำแหน่งใหม่
+    if (moveVector.lengthSq() > 0) {
       const newPosition = this.player.position.clone().add(moveVector);
-      
-      // ตรวจสอบ collision ก่อนเคลื่อนที่
       if (!this.checkCollision(newPosition)) {
         this.player.position.copy(newPosition);
-        
-        // อัพเดทกล้องให้ตาม player
-        if (this.currentView === 'game') {
-          this.controls.target.set(this.player.position.x, 0, this.player.position.z);
-        }
       }
     }
   }
 
   private checkCollision(newPosition: THREE.Vector3): boolean {
     const playerBox = new THREE.Box3().setFromCenterAndSize(
-      newPosition,
-      new THREE.Vector3(this.playerSize, this.playerSize, this.playerSize)
+      newPosition, new THREE.Vector3(this.playerSize, this.playerSize * 2, this.playerSize)
     );
-
-    // ตรวจสอบชนกับกำแพง
     for (const wall of this.wallMeshes) {
-      const wallBox = new THREE.Box3().setFromObject(wall);
-      if (playerBox.intersectsBox(wallBox)) {
-        return true; // มี collision
-      }
+      if (playerBox.intersectsBox(new THREE.Box3().setFromObject(wall))) return true;
     }
-
-    // ตรวจสอบชนกับ objects (ลิฟต์, ห้องน้ำ, บันได)
     for (const obj of this.objectMeshes) {
-      const objBox = new THREE.Box3().setFromObject(obj);
-      if (playerBox.intersectsBox(objBox)) {
-        return true; // มี collision
-      }
+      if (playerBox.intersectsBox(new THREE.Box3().setFromObject(obj))) return true;
     }
-
-    return false; // ไม่มี collision
+    return false;
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -216,69 +207,44 @@ export class FloorPlanComponent implements AfterViewInit {
     }
   }
 
-  private buildWallMesh(start: THREE.Vector3, end: THREE.Vector3, height: number, material: THREE.Material, yOffset: number = 0): THREE.Mesh {
+  private buildWallMesh(start: THREE.Vector3, end: THREE.Vector3, height: number, material: THREE.Material): THREE.Mesh {
     const distance = start.distanceTo(end);
-    
     if (distance < 0.1) {
       console.warn('Wall distance too small, skipping');
       return new THREE.Mesh();
     }
-    
     const geometry = new THREE.BoxGeometry(distance, height, this.wallThickness);
     const mesh = new THREE.Mesh(geometry, material);
-    
     const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    mesh.position.set(midPoint.x, height / 2 + yOffset, midPoint.z);
-    
+    mesh.position.set(midPoint.x, height / 2, midPoint.z);
     const direction = new THREE.Vector3().subVectors(end, start).normalize();
     const angle = Math.atan2(direction.z, direction.x);
     mesh.rotation.y = angle;
-    
     return mesh;
+  }
+
+  private updateCameraPosition(): void {
+    if (this.currentView === 'game') {
+      const offset = new THREE.Vector3(-16, 12, -16);
+      const cameraTargetPosition = new THREE.Vector3().copy(this.player.position).add(offset);
+      this.camera.position.copy(cameraTargetPosition);
+      this.controls.target.set(this.player.position.x, 0, this.player.position.z);
+    } else {
+      this.camera.position.set(0, 50, 0);
+      this.camera.rotation.set(-Math.PI / 2, 0, 0);
+      this.controls.target.set(0, 0, 0);
+    }
   }
 
   private startRenderingLoop(): void {
     const render = () => {
       requestAnimationFrame(render);
-      
       this.updatePlayer();
-      
-      if (this.currentView === 'game') {
-        const cameraTargetPosition = new THREE.Vector3(
-          this.player.position.x - 80,
-          120,
-          this.player.position.z - 80
-        );
-        
-        this.camera.position.copy(cameraTargetPosition);
-        
-      } else { 
-        this.camera.position.set(0, 300, 0);
-        this.controls.target.set(0, 0, 0);
-      }
-      
+      this.updateCameraPosition();
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
     };
     render();
-  }
-
-  toggleView(): void {
-    this.currentView = this.currentView === 'game' ? 'top' : 'game';
-    
-    if (this.currentView === 'game') {
-      this.camera.position.set(
-        this.player.position.x - 80, 
-        120, 
-        this.player.position.z - 80
-      );
-      this.controls.target.set(this.player.position.x, 0, this.player.position.z);
-    } else {
-      this.camera.position.set(0, 300, 0);
-      this.controls.target.set(0, 0, 0);
-    }
-    
-    this.controls.update();
   }
 
   @HostListener('window:resize', ['$event'])
