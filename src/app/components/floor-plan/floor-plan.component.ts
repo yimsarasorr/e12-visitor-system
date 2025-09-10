@@ -111,10 +111,11 @@ export class FloorPlanComponent implements AfterViewInit {
     const gridHelper = new THREE.GridHelper(100, 100);
     this.scene.add(gridHelper);
 
+    // ป้ายบอกสเกล (แก้ตำแหน่งและข้อความ)
     this.addScaleLabel(50, 50, "1 ช่อง = 1 เมตร");
-    this.addScaleLabel(-40, -5, `ปีกซ้าย: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
-    this.addScaleLabel(40, -5, `ปีกขวา: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
-    this.addScaleLabel(0, 0, `โถงกลาง: ${this.LOBBY_LENGTH}x${this.BUILDING_WIDTH} เมตร`);
+    this.addScaleLabel(-30, -10, `ปีกซ้าย: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
+    this.addScaleLabel(30, -10, `ปีกขวา: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
+    this.addScaleLabel(0, -12, `โถงกลาง: ${this.LOBBY_LENGTH}x${this.BUILDING_WIDTH} m`);
 
     this.scene.add(floorGroup);
 
@@ -164,13 +165,23 @@ export class FloorPlanComponent implements AfterViewInit {
 
   private updatePlayer(): void {
     if (!this.player) return;
+
+    // Camera-relative movement
+    const cameraDirection = new THREE.Vector3();
+    this.camera.getWorldDirection(cameraDirection);
+    cameraDirection.y = 0;
+    cameraDirection.normalize();
+
+    const rightDirection = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
     const moveVector = new THREE.Vector3(0, 0, 0);
-    if (this.keys.ArrowUp) moveVector.z -= this.playerSpeed;
-    if (this.keys.ArrowDown) moveVector.z += this.playerSpeed;
-    if (this.keys.ArrowLeft) moveVector.x -= this.playerSpeed;
-    if (this.keys.ArrowRight) moveVector.x += this.playerSpeed;
+
+    if (this.keys.ArrowUp) moveVector.add(cameraDirection);
+    if (this.keys.ArrowDown) moveVector.sub(cameraDirection);
+    if (this.keys.ArrowLeft) moveVector.add(rightDirection);
+    if (this.keys.ArrowRight) moveVector.sub(rightDirection);
 
     if (moveVector.lengthSq() > 0) {
+      moveVector.normalize().multiplyScalar(this.playerSpeed);
       const newPosition = this.player.position.clone().add(moveVector);
       if (!this.checkCollision(newPosition)) {
         this.player.position.copy(newPosition);
@@ -226,21 +237,27 @@ export class FloorPlanComponent implements AfterViewInit {
   private updateCameraPosition(): void {
     if (this.currentView === 'game') {
       const offset = new THREE.Vector3(-16, 12, -16);
-      const cameraTargetPosition = new THREE.Vector3().copy(this.player.position).add(offset);
+      const cameraTargetPosition = this.player.position.clone().add(offset);
       this.camera.position.copy(cameraTargetPosition);
       this.controls.target.set(this.player.position.x, 0, this.player.position.z);
     } else {
       this.camera.position.set(0, 50, 0);
-      this.camera.rotation.set(-Math.PI / 2, 0, 0);
+      // กล้องมองตรงลงมาและหมุน 180 องศา
+      this.camera.rotation.set(-Math.PI / 2, 0, Math.PI);
       this.controls.target.set(0, 0, 0);
     }
+    this.camera.updateProjectionMatrix();
+    this.controls.update();
   }
 
   private startRenderingLoop(): void {
     const render = () => {
       requestAnimationFrame(render);
       this.updatePlayer();
-      this.updateCameraPosition();
+      // อัปเดตตำแหน่งกล้องเฉพาะ game view
+      if (this.currentView === 'game') {
+        this.updateCameraPosition();
+      }
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
     };
