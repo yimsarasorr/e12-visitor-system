@@ -4,3 +4,12 @@
   </button>
 </div>
 <canvas #canvas></canvas>
+
+<div class="mobile-controls">
+  <button class="control-btn up" (touchstart)="move('ArrowUp', true)" (touchend)="move('ArrowUp', false)">▲</button>
+  <div class="horizontal-controls">
+    <button class="control-btn left" (touchstart)="move('ArrowLeft', true)" (touchend)="move('ArrowLeft', false)">◄</button>
+    <button class="control-btn down" (touchstart)="move('ArrowDown', true)" (touchend)="move('ArrowDown', false)">▼</button>
+    <button class="control-btn right" (touchstart)="move('ArrowRight', true)" (touchend)="move('ArrowRight', false)">►</button>
+  </div>
+</div>
