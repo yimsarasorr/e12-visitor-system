@@ -2,14 +2,20 @@ import { Component, ElementRef, ViewChild, AfterViewInit, HostListener } from '@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import floorData from './e12-floor1.json';
+import { ButtonModule } from 'primeng/button';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-floor-plan',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ButtonModule
+  ],
   templateUrl: './floor-plan.component.html',
-  styleUrls: ['./floor-plan.component.css']
+  styleUrls: ['./floor-plan.component.css'],
 })
 export class FloorPlanComponent implements AfterViewInit {
-
   @ViewChild('canvas') private canvasRef!: ElementRef;
 
   private scene!: THREE.Scene;
@@ -36,6 +42,35 @@ export class FloorPlanComponent implements AfterViewInit {
   };
 
   public currentView: 'game' | 'top' = 'game';
+  public isFullscreen = false;
+  public currentZoneId: string | null = null;
+
+  private checkPlayerZone(): void {
+  if (!this.player) return;
+
+  const playerPos = this.player.position;
+  let inAnyZone = false;
+
+  for (const area of floorData.areas) {
+    const bounds = area.boundary;
+    if (playerPos.x >= bounds.min.x && playerPos.x <= bounds.max.x &&
+        playerPos.z >= bounds.min.y && playerPos.z <= bounds.max.y) {
+      
+      // อัปเดตค่าเมื่อผู้เล่นเดินเข้าโซนใหม่
+      if (this.currentZoneId !== area.id) {
+        this.currentZoneId = area.id;
+        console.log(`Player entered zone: ${this.currentZoneId}`);
+      }
+      inAnyZone = true;
+      break; // เมื่อเจอโซนแล้วก็ไม่จำเป็นต้องเช็คโซนอื่นต่อ
+    }
+  }
+
+  // ถ้าผู้เล่นไม่ได้อยู่ในโซนใดๆ เลย ให้เคลียร์ค่า
+  if (!inAnyZone && this.currentZoneId !== null) {
+    this.currentZoneId = null;
+    }
+  } 
 
   ngAfterViewInit(): void {
     this.createScene();
@@ -49,9 +84,17 @@ export class FloorPlanComponent implements AfterViewInit {
     this.updateCameraPosition();
   }
 
-  public move(key: string, state: boolean): void {
-  if (key in this.keys) {
-    (this.keys as any)[key] = state;
+  toggleFullscreen(): void {
+    this.isFullscreen = !this.isFullscreen;
+    // ใช้ setTimeout เพื่อให้ DOM มีเวลาปรับขนาดก่อนที่เราจะ resize canvas
+    setTimeout(() => this.onWindowResize(), 50);
+  }
+
+  public move(event: Event, key: string, state: boolean): void {
+    event.preventDefault();
+    event.stopPropagation(); // <-- เพิ่มบรรทัดนี้เพื่อหยุด Event ไม่ให้ทะลุไปถึง OrbitControls
+    if (key in this.keys) {
+      (this.keys as any)[key] = state;
     }
   }
 
@@ -60,23 +103,23 @@ export class FloorPlanComponent implements AfterViewInit {
   }
 
   private createScene(): void {
-  this.scene = new THREE.Scene();
-  this.scene.background = new THREE.Color(0xEBF0F5);
-  const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
-  this.camera = new THREE.OrthographicCamera(
-    this.frustumSize * aspect / -2, this.frustumSize * aspect / 2, this.frustumSize / 2, this.frustumSize / -2, 0.1, 1000
-  );
-  this.camera.position.set(-20, 18, -25);
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0xEBF0F5);
+    const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+    this.camera = new THREE.OrthographicCamera(
+      this.frustumSize * aspect / -2, this.frustumSize * aspect / 2, this.frustumSize / 2, this.frustumSize / -2, 0.1, 1000
+    );
+    this.camera.position.set(-20, 18, -25);
 
-  this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-  this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
-  this.renderer.setPixelRatio(window.devicePixelRatio);
-  this.renderer.shadowMap.enabled = true;
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = true;
 
-  this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-  this.controls.enableDamping = true;
-  this.controls.target.set(0, 0, -6);
-}
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.target.set(0, 0, -6);
+  }
 
   private loadFloorPlan(): void {
     const floorGroup = new THREE.Group();
@@ -117,7 +160,6 @@ export class FloorPlanComponent implements AfterViewInit {
     const gridHelper = new THREE.GridHelper(100, 100);
     this.scene.add(gridHelper);
 
-    // ป้ายบอกสเกล (แก้ตำแหน่งและข้อความ)
     this.addScaleLabel(50, 50, "1 ช่อง = 1 เมตร");
     this.addScaleLabel(-30, -10, `ปีกซ้าย: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
     this.addScaleLabel(30, -10, `ปีกขวา: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
@@ -183,8 +225,8 @@ export class FloorPlanComponent implements AfterViewInit {
 
     if (this.keys.ArrowUp) moveVector.add(cameraDirection);
     if (this.keys.ArrowDown) moveVector.sub(cameraDirection);
-    if (this.keys.ArrowLeft) moveVector.add(rightDirection);
-    if (this.keys.ArrowRight) moveVector.sub(rightDirection);
+    if (this.keys.ArrowLeft) moveVector.add(rightDirection); // <-- กลับมาใช้ Logic เดิม
+    if (this.keys.ArrowRight) moveVector.sub(rightDirection); // <-- กลับมาใช้ Logic เดิม
 
     if (moveVector.lengthSq() > 0) {
       moveVector.normalize().multiplyScalar(this.playerSpeed);
@@ -242,14 +284,12 @@ export class FloorPlanComponent implements AfterViewInit {
 
   private updateCameraPosition(): void {
     if (this.currentView === 'game') {
-      // ปรับค่า offset เพื่อให้มุมกล้องใกล้และต่ำลงเล็กน้อย
-      const offset = new THREE.Vector3(-8, 7, -8); 
+      const offset = new THREE.Vector3(-8, 7, -8);
       const cameraTargetPosition = this.player.position.clone().add(offset);
       this.camera.position.copy(cameraTargetPosition);
       this.controls.target.set(this.player.position.x, 0, this.player.position.z);
     } else { // Top View
-      // ลดความสูงของกล้องลงเพื่อให้เห็นรายละเอียดใกล้ขึ้น
-      this.camera.position.set(this.player.position.x, 35, this.player.position.z); 
+      this.camera.position.set(this.player.position.x, 35, this.player.position.z);
       this.camera.rotation.set(-Math.PI / 2, 0, Math.PI);
       this.controls.target.set(this.player.position.x, 0, this.player.position.z);
     }
@@ -258,36 +298,32 @@ export class FloorPlanComponent implements AfterViewInit {
   }
 
   private startRenderingLoop(): void {
-  const render = () => {
-    requestAnimationFrame(render);
+    const render = () => {
+      requestAnimationFrame(render);
 
-    const canvas = this.renderer.domElement;
-    const aspect = canvas.clientWidth / canvas.clientHeight;
+      const canvas = this.renderer.domElement;
+      const aspect = canvas.clientWidth / canvas.clientHeight;
 
-    this.camera.left = this.frustumSize * aspect / -2;
-    this.camera.right = this.frustumSize * aspect / 2;
-    this.camera.top = this.frustumSize / 2;
-    this.camera.bottom = this.frustumSize / -2;
-    this.camera.updateProjectionMatrix();
+      this.camera.left = this.frustumSize * aspect / -2;
+      this.camera.right = this.frustumSize * aspect / 2;
+      this.camera.top = this.frustumSize / 2;
+      this.camera.bottom = this.frustumSize / -2;
+      this.camera.updateProjectionMatrix();
 
-    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+      this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
-    this.updatePlayer();
-    this.updateCameraPosition();
-    this.controls.update();
-    this.renderer.render(this.scene, this.camera);
-  };
-  render();
-}
+      this.updatePlayer();
+      this.checkPlayerZone();
+      this.updateCameraPosition();
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    };
+    render();
+  }
 
-  @HostListener('window:resize', ['$event'])
-  onWindowResize(event: Event) {
-    // const aspect = this.canvas.clientWidth / this.canvas.clientHeight;
-    // this.camera.left = this.frustumSize * aspect / -2;
-    // this.camera.right = this.frustumSize * aspect / 2;
-    // this.camera.top = this.frustumSize / 2;
-    // this.camera.bottom = this.frustumSize / -2;
-    // this.camera.updateProjectionMatrix();
-    // this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+  @HostListener('window:resize')
+  onWindowResize() {
+    // Left empty because the render loop handles resizing
+
   }
 }

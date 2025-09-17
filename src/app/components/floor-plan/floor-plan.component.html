@@ -1,15 +1,33 @@
-<div class="view-toggle-container">
-  <button (click)="toggleView()">
-    {{ currentView === 'game' ? 'Floor Plan View' : 'Game View' }}
-  </button>
-</div>
-<canvas #canvas></canvas>
+<div class="floor-plan-wrapper" [class.fullscreen]="isFullscreen">
 
-<div class="mobile-controls">
-  <button class="control-btn up" (touchstart)="move('ArrowUp', true)" (touchend)="move('ArrowUp', false)">▲</button>
-  <div class="horizontal-controls">
-    <button class="control-btn left" (touchstart)="move('ArrowLeft', true)" (touchend)="move('ArrowLeft', false)">◄</button>
-    <button class="control-btn down" (touchstart)="move('ArrowDown', true)" (touchend)="move('ArrowDown', false)">▼</button>
-    <button class="control-btn right" (touchstart)="move('ArrowRight', true)" (touchend)="move('ArrowRight', false)">►</button>
+  <div class="view-toggle-container">
+    <p-button
+      (click)="toggleFullscreen()"
+      [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+      [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
+      styleClass="p-button-sm">
+    </p-button>
+
+    <p-button
+      (click)="toggleView()"
+      [label]="currentView === 'game' ? 'Top View' : 'Game View'"
+      styleClass="p-button-sm p-button-secondary">
+    </p-button>
   </div>
+  
+  <canvas #canvas></canvas>
+
+  <div *ngIf="currentZoneId" class="zone-display">
+    You are in: <strong>{{ currentZoneId }}</strong>
+  </div>
+
+  <div class="mobile-controls">
+    <button class="control-btn up" (touchstart)="move($event, 'ArrowUp', true)" (touchend)="move($event, 'ArrowUp', false)">▲</button>
+    <div class="horizontal-controls">
+      <button class="control-btn left" (touchstart)="move($event, 'ArrowLeft', true)" (touchend)="move($event, 'ArrowLeft', false)">◄</button>
+      <button class="control-btn down" (touchstart)="move($event, 'ArrowDown', true)" (touchend)="move($event, 'ArrowDown', false)">▼</button>
+      <button class="control-btn right" (touchstart)="move($event, 'ArrowRight', true)" (touchend)="move($event, 'ArrowRight', false)">►</button>
+    </div>
+  </div>
+
 </div>

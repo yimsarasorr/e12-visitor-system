@@ -1,0 +1,49 @@
+:host {
+  font-family: Arial, sans-serif;
+  color: #333;
+}
+
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.main-header {
+  background-color: #005A9C;
+  color: white;
+  padding: 10px 30px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.main-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.main-header p {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+  background-color: #f4f7f6;
+  overflow-y: auto;
+}
+
+.content-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.floor-plan-container {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  height: 600px;
+  position: relative;
+  overflow: hidden;
+  background: #e0e0e0;
+}
