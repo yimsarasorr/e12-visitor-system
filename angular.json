@@ -27,10 +27,9 @@
               }
             ],
             "styles": [
-              "node_modules/@primeng/themes/aura-light-blue/theme.css",
+              "src/styles.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/primeflex/primeflex.css",
-              "src/styles.css"
+              "node_modules/primeflex/primeflex.css"
             ],
             "scripts": []
           },
