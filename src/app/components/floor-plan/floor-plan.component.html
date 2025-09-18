@@ -1,33 +1,100 @@
-<div class="floor-plan-wrapper" [class.fullscreen]="isFullscreen">
+<div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
 
   <div class="view-toggle-container">
     <p-button
       (click)="toggleFullscreen()"
       [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
       [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
-      styleClass="p-button-sm">
-    </p-button>
+      styleClass="p-button-sm"
+    ></p-button>
 
     <p-button
       (click)="toggleView()"
       [label]="currentView === 'game' ? 'Top View' : 'Game View'"
-      styleClass="p-button-sm p-button-secondary">
-    </p-button>
+      styleClass="p-button-sm p-button-secondary"
+    ></p-button>
   </div>
-  
+
+  <div class="auth-controls">
+    <p-button
+      (click)="simulateAuthentication(1)"
+      label="Guest Access"
+      styleClass="p-button-sm p-button-info"
+    ></p-button>
+    <p-button
+      (click)="simulateAuthentication(2)"
+      label="Staff Access"
+      styleClass="p-button-sm p-button-success"
+    ></p-button>
+    <p-button
+      (click)="simulateAuthentication(0)"
+      label="Logout"
+      styleClass="p-button-sm p-button-warning"
+    ></p-button>
+  </div>
+
   <canvas #canvas></canvas>
 
   <div *ngIf="currentZoneId" class="zone-display">
     You are in: <strong>{{ currentZoneId }}</strong>
   </div>
 
-  <div class="mobile-controls">
-    <button class="control-btn up" (touchstart)="move($event, 'ArrowUp', true)" (touchend)="move($event, 'ArrowUp', false)">▲</button>
+  <div
+    class="mobile-controls"
+    (pointerdown)="disableOrbitControls($event)"
+    (pointerup)="enableOrbitControls($event)"
+  >
+    <button
+      class="control-btn up"
+      (touchstart)="move($event, 'ArrowUp', true)"
+      (touchend)="move($event, 'ArrowUp', false)"
+    >
+      ▲
+    </button>
     <div class="horizontal-controls">
-      <button class="control-btn left" (touchstart)="move($event, 'ArrowLeft', true)" (touchend)="move($event, 'ArrowLeft', false)">◄</button>
-      <button class="control-btn down" (touchstart)="move($event, 'ArrowDown', true)" (touchend)="move($event, 'ArrowDown', false)">▼</button>
-      <button class="control-btn right" (touchstart)="move($event, 'ArrowRight', true)" (touchend)="move($event, 'ArrowRight', false)">►</button>
+      <button
+        class="control-btn left"
+        (touchstart)="move($event, 'ArrowLeft', true)"
+        (touchend)="move($event, 'ArrowLeft', false)"
+      >
+        ◄
+      </button>
+      <button
+        class="control-btn down"
+        (touchstart)="move($event, 'ArrowDown', true)"
+        (touchend)="move($event, 'ArrowDown', false)"
+      >
+        ▼
+      </button>
+      <button
+        class="control-btn right"
+        (touchstart)="move($event, 'ArrowRight', true)"
+        (touchend)="move($event, 'ArrowRight', false)"
+      >
+        ►
+      </button>
     </div>
   </div>
-
 </div>
+
+<p-dialog
+  header="Area Details"
+  [(visible)]="isDetailDialogVisible"
+  [modal]="true"
+  [style]="{ width: '50vw' }"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div *ngIf="selectedArea">
+    <h3>{{ selectedArea.id }}</h3>
+    <p>
+      <strong>Color:</strong>
+      <span [style.color]="selectedArea.color">{{ selectedArea.color }}</span>
+    </p>
+    <p><strong>Boundary:</strong></p>
+    <ul>
+      <li>Min: ({{ selectedArea.boundary.min.x }}, {{ selectedArea.boundary.min.y }})</li>
+      <li>Max: ({{ selectedArea.boundary.max.x }}, {{ selectedArea.boundary.max.y }})</li>
+    </ul>
+  </div>
+</p-dialog>

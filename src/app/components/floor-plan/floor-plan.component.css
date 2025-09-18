@@ -89,12 +89,24 @@ canvas {
   border-radius: 20px;
   font-size: 14px;
   z-index: 5;
-  pointer-events: none; /* ทำให้คลิกทะลุได้ */
+  pointer-events: none;
 }
 
-/* ทำให้กล่องข้อความอยู่เหนือปุ่มควบคุมบนมือถือ */
 @media (max-width: 1023px) {
   .zone-display {
     bottom: 140px;
   }
+}
+
+.auth-controls {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 5px;
+  border-radius: 8px;
 }

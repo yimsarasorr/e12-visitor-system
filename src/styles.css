@@ -2,11 +2,11 @@ html, body {
   height: 100%;
   width: 100%;
   margin: 0;
-  overflow: hidden; /* ป้องกัน scroll bar ที่ไม่จำเป็น */
+  overflow: hidden;
 }
 
 app-root {
-  display: block; /* หรือ flex ก็ได้ แต่ block ก็เพียงพอ */
+  display: block;
   width: 100%;
   height: 100%;
 }

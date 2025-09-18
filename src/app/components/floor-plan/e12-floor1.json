@@ -24,6 +24,12 @@
     { "id": "stairs_left", "type": "Stairs", "boundary": { "min": { "x": -52, "y": -9 }, "max": { "x": -46, "y": -2 } } },
     { "id": "stairs_right", "type": "Stairs", "boundary": { "min": { "x": 46, "y": -9 }, "max": { "x": 52, "y": -2 } } }
   ],
+  "doors": [
+    { "id": "door_1a_room1", "center": { "x": -36.25, "y": -4 }, "size": { "width": 2, "depth": 0.2 }, "accessLevel": 2 },
+    { "id": "door_1a_room2", "center": { "x": -16.75, "y": -4 }, "size": { "width": 2, "depth": 0.2 }, "accessLevel": 2 },
+    { "id": "door_1b_room1", "center": { "x": 16.75, "y": -4 }, "size": { "width": 2, "depth": 0.2 }, "accessLevel": 1 },
+    { "id": "door_1b_room2", "center": { "x": 36.25, "y": -4 }, "size": { "width": 2, "depth": 0.2 }, "accessLevel": 1 }
+  ],
   "walls": [
     { "start": { "x": -7, "y": 9 }, "end": { "x": 7, "y": 9 } },
     { "start": { "x": -7, "y": -9 }, "end": { "x": -7, "y": -18 } },

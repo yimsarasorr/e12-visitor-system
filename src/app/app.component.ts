@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { FloorPlanComponent } from "./components/floor-plan/floor-plan.component";
-import { ButtonModule } from 'primeng/button'; // <-- Import
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-root',
-  standalone: true, // <-- ทำให้เป็น Standalone
+  standalone: true,
   imports: [
     FloorPlanComponent,
-    ButtonModule // <-- เพิ่มเข้าไป
+    ButtonModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'

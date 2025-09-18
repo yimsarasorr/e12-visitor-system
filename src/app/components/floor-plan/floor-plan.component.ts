@@ -4,13 +4,15 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import floorData from './e12-floor1.json';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule } from '@angular/common';
+import { DialogModule } from 'primeng/dialog';
 
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
   imports: [
     CommonModule,
-    ButtonModule
+    ButtonModule,
+    DialogModule
   ],
   templateUrl: './floor-plan.component.html',
   styleUrls: ['./floor-plan.component.css'],
@@ -32,10 +34,13 @@ export class FloorPlanComponent implements AfterViewInit {
   private playerSpeed = 0.1;
   private wallMeshes: THREE.Mesh[] = [];
   private objectMeshes: THREE.Mesh[] = [];
+  private floorMeshes: THREE.Mesh[] = [];
+  private doorMeshes: THREE.Mesh[] = [];
 
-  private readonly WING_LENGTH = 39;
-  private readonly BUILDING_WIDTH = 18;
-  private readonly LOBBY_LENGTH = 14;
+  private lockedDoorMaterial!: THREE.MeshStandardMaterial;
+  private unlockedDoorMaterial!: THREE.MeshStandardMaterial;
+
+  private currentUserAccessLevel = 0;
 
   private keys = {
     ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false
@@ -44,39 +49,31 @@ export class FloorPlanComponent implements AfterViewInit {
   public currentView: 'game' | 'top' = 'game';
   public isFullscreen = false;
   public currentZoneId: string | null = null;
-
-  private checkPlayerZone(): void {
-  if (!this.player) return;
-
-  const playerPos = this.player.position;
-  let inAnyZone = false;
-
-  for (const area of floorData.areas) {
-    const bounds = area.boundary;
-    if (playerPos.x >= bounds.min.x && playerPos.x <= bounds.max.x &&
-        playerPos.z >= bounds.min.y && playerPos.z <= bounds.max.y) {
-      
-      // อัปเดตค่าเมื่อผู้เล่นเดินเข้าโซนใหม่
-      if (this.currentZoneId !== area.id) {
-        this.currentZoneId = area.id;
-        console.log(`Player entered zone: ${this.currentZoneId}`);
-      }
-      inAnyZone = true;
-      break; // เมื่อเจอโซนแล้วก็ไม่จำเป็นต้องเช็คโซนอื่นต่อ
-    }
-  }
-
-  // ถ้าผู้เล่นไม่ได้อยู่ในโซนใดๆ เลย ให้เคลียร์ค่า
-  if (!inAnyZone && this.currentZoneId !== null) {
-    this.currentZoneId = null;
-    }
-  } 
+  public isDetailDialogVisible = false;
+  public selectedArea: any = null;
 
   ngAfterViewInit(): void {
     this.createScene();
     this.loadFloorPlan();
     this.createPlayer();
     this.startRenderingLoop();
+    this.updateDoorMaterials();
+  }
+
+  public simulateAuthentication(level: number): void {
+    this.currentUserAccessLevel = level;
+    this.updateDoorMaterials();
+  }
+
+  private updateDoorMaterials(): void {
+    this.doorMeshes.forEach(door => {
+      const requiredLevel = door.userData['accessLevel'];
+      if (this.currentUserAccessLevel >= requiredLevel) {
+        door.material = this.unlockedDoorMaterial;
+      } else {
+        door.material = this.lockedDoorMaterial;
+      }
+    });
   }
 
   toggleView(): void {
@@ -86,16 +83,25 @@ export class FloorPlanComponent implements AfterViewInit {
 
   toggleFullscreen(): void {
     this.isFullscreen = !this.isFullscreen;
-    // ใช้ setTimeout เพื่อให้ DOM มีเวลาปรับขนาดก่อนที่เราจะ resize canvas
     setTimeout(() => this.onWindowResize(), 50);
   }
 
   public move(event: Event, key: string, state: boolean): void {
     event.preventDefault();
-    event.stopPropagation(); // <-- เพิ่มบรรทัดนี้เพื่อหยุด Event ไม่ให้ทะลุไปถึง OrbitControls
+    event.stopPropagation();
     if (key in this.keys) {
       (this.keys as any)[key] = state;
     }
+  }
+
+  public disableOrbitControls(event: Event): void {
+    event.stopPropagation();
+    this.controls.enabled = false;
+  }
+
+  public enableOrbitControls(event: Event): void {
+    event.stopPropagation();
+    this.controls.enabled = true;
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -112,13 +118,15 @@ export class FloorPlanComponent implements AfterViewInit {
     this.camera.position.set(-20, 18, -25);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
-    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
     this.renderer.shadowMap.enabled = true;
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.target.set(0, 0, -6);
+
+    this.lockedDoorMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 });
+    this.unlockedDoorMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3 });
   }
 
   private loadFloorPlan(): void {
@@ -134,11 +142,13 @@ export class FloorPlanComponent implements AfterViewInit {
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.position.set(area.boundary.min.x + width / 2, 0.01, area.boundary.min.y + depth / 2);
+      floor.userData = { type: 'floor', areaData: area };
+      this.floorMeshes.push(floor);
       floorGroup.add(floor);
     });
 
-    if ((floorData as any).walls) {
-      (floorData as any).walls.forEach((wall: any) => {
+    if (floorData.walls) {
+      floorData.walls.forEach(wall => {
         const start = new THREE.Vector3(wall.start.x, 0, wall.start.y);
         const end = new THREE.Vector3(wall.end.x, 0, wall.end.y);
         const wallMesh = this.buildWallMesh(start, end, this.wallHeight, wallMaterial);
@@ -152,19 +162,24 @@ export class FloorPlanComponent implements AfterViewInit {
       const depth = obj.boundary.max.y - obj.boundary.min.y;
       const geo = new THREE.BoxGeometry(width, this.wallHeight, depth);
       const mesh = new THREE.Mesh(geo, objectMaterial);
-      mesh.position.set(obj.boundary.min.x + width/2, this.wallHeight/2, obj.boundary.min.y + depth/2);
+      mesh.position.set(obj.boundary.min.x + width / 2, this.wallHeight / 2, obj.boundary.min.y + depth / 2);
       this.objectMeshes.push(mesh);
       floorGroup.add(mesh);
     });
+    
+    if ((floorData as any).doors) {
+      (floorData as any).doors.forEach((door: any) => {
+        const geo = new THREE.BoxGeometry(door.size.width, this.wallHeight, door.size.depth);
+        const mesh = new THREE.Mesh(geo, this.lockedDoorMaterial);
+        mesh.position.set(door.center.x, this.wallHeight / 2, door.center.y);
+        mesh.userData = { id: door.id, accessLevel: door.accessLevel };
+        this.doorMeshes.push(mesh);
+        floorGroup.add(mesh);
+      });
+    }
 
-    const gridHelper = new THREE.GridHelper(100, 100);
+    const gridHelper = new THREE.GridHelper(150, 150);
     this.scene.add(gridHelper);
-
-    this.addScaleLabel(50, 50, "1 ช่อง = 1 เมตร");
-    this.addScaleLabel(-30, -10, `ปีกซ้าย: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
-    this.addScaleLabel(30, -10, `ปีกขวา: ${this.WING_LENGTH}x${this.BUILDING_WIDTH} m`);
-    this.addScaleLabel(0, -12, `โถงกลาง: ${this.LOBBY_LENGTH}x${this.BUILDING_WIDTH} m`);
-
     this.scene.add(floorGroup);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -173,33 +188,6 @@ export class FloorPlanComponent implements AfterViewInit {
     directionalLight.position.set(-10, 20, -10);
     directionalLight.castShadow = true;
     this.scene.add(directionalLight);
-  }
-
-  private addScaleLabel(x: number, z: number, text: string): void {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 64;
-    const context = canvas.getContext('2d');
-    if (context) {
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = '#000000';
-      context.font = '24px Arial';
-      context.fillText(text, 10, 40);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide
-      });
-
-      const geometry = new THREE.PlaneGeometry(8, 2);
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.set(x, 0.5, z);
-      mesh.rotation.x = -Math.PI / 2;
-      this.scene.add(mesh);
-    }
   }
 
   private createPlayer(): void {
@@ -213,21 +201,16 @@ export class FloorPlanComponent implements AfterViewInit {
 
   private updatePlayer(): void {
     if (!this.player) return;
-
-    // Camera-relative movement
     const cameraDirection = new THREE.Vector3();
     this.camera.getWorldDirection(cameraDirection);
     cameraDirection.y = 0;
     cameraDirection.normalize();
-
     const rightDirection = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
     const moveVector = new THREE.Vector3(0, 0, 0);
-
     if (this.keys.ArrowUp) moveVector.add(cameraDirection);
     if (this.keys.ArrowDown) moveVector.sub(cameraDirection);
-    if (this.keys.ArrowLeft) moveVector.add(rightDirection); // <-- กลับมาใช้ Logic เดิม
-    if (this.keys.ArrowRight) moveVector.sub(rightDirection); // <-- กลับมาใช้ Logic เดิม
-
+    if (this.keys.ArrowLeft) moveVector.add(rightDirection);
+    if (this.keys.ArrowRight) moveVector.sub(rightDirection);
     if (moveVector.lengthSq() > 0) {
       moveVector.normalize().multiplyScalar(this.playerSpeed);
       const newPosition = this.player.position.clone().add(moveVector);
@@ -247,7 +230,51 @@ export class FloorPlanComponent implements AfterViewInit {
     for (const obj of this.objectMeshes) {
       if (playerBox.intersectsBox(new THREE.Box3().setFromObject(obj))) return true;
     }
+    for (const door of this.doorMeshes) {
+      if (this.currentUserAccessLevel < door.userData['accessLevel']) { // <-- แก้ไข
+        if (playerBox.intersectsBox(new THREE.Box3().setFromObject(door))) return true;
+      }
+    }
     return false;
+  }
+
+  private checkPlayerZone(): void {
+    if (!this.player) return;
+    const playerPos = this.player.position;
+    let inAnyZone = false;
+    for (const area of floorData.areas) {
+      const bounds = area.boundary;
+      if (playerPos.x >= bounds.min.x && playerPos.x <= bounds.max.x &&
+          playerPos.z >= bounds.min.y && playerPos.z <= bounds.max.y) {
+        if (this.currentZoneId !== area.id) {
+          this.currentZoneId = area.id;
+        }
+        inAnyZone = true;
+        break;
+      }
+    }
+    if (!inAnyZone && this.currentZoneId !== null) {
+      this.currentZoneId = null;
+    }
+  }
+  
+  @HostListener('window:click', ['$event'])
+  onClick(event: MouseEvent) {
+    if (this.controls.enabled === false) return;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, this.camera);
+    const intersects = raycaster.intersectObjects(this.floorMeshes);
+    if (intersects.length > 0) {
+      const clickedFloor = intersects[0].object;
+      if (clickedFloor.userData['type'] === 'floor') { // <-- แก้ไข
+        this.selectedArea = clickedFloor.userData['areaData']; // <-- แก้ไข
+        this.isDetailDialogVisible = true;
+      }
+    }
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -268,28 +295,24 @@ export class FloorPlanComponent implements AfterViewInit {
 
   private buildWallMesh(start: THREE.Vector3, end: THREE.Vector3, height: number, material: THREE.Material): THREE.Mesh {
     const distance = start.distanceTo(end);
-    if (distance < 0.1) {
-      console.warn('Wall distance too small, skipping');
-      return new THREE.Mesh();
-    }
+    if (distance < 0.1) return new THREE.Mesh();
     const geometry = new THREE.BoxGeometry(distance, height, this.wallThickness);
     const mesh = new THREE.Mesh(geometry, material);
     const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
     mesh.position.set(midPoint.x, height / 2, midPoint.z);
-    const direction = new THREE.Vector3().subVectors(end, start).normalize();
-    const angle = Math.atan2(direction.z, direction.x);
-    mesh.rotation.y = angle;
+    const direction = new THREE.Vector3().subVectors(end, start);
+    mesh.rotation.y = Math.atan2(direction.z, direction.x);
     return mesh;
   }
-
+  
   private updateCameraPosition(): void {
     if (this.currentView === 'game') {
-      const offset = new THREE.Vector3(-8, 7, -8);
+      const offset = new THREE.Vector3(-8, 7, -8); 
       const cameraTargetPosition = this.player.position.clone().add(offset);
       this.camera.position.copy(cameraTargetPosition);
       this.controls.target.set(this.player.position.x, 0, this.player.position.z);
-    } else { // Top View
-      this.camera.position.set(this.player.position.x, 35, this.player.position.z);
+    } else {
+      this.camera.position.set(this.player.position.x, 35, this.player.position.z); 
       this.camera.rotation.set(-Math.PI / 2, 0, Math.PI);
       this.controls.target.set(this.player.position.x, 0, this.player.position.z);
     }
@@ -300,18 +323,16 @@ export class FloorPlanComponent implements AfterViewInit {
   private startRenderingLoop(): void {
     const render = () => {
       requestAnimationFrame(render);
-
       const canvas = this.renderer.domElement;
-      const aspect = canvas.clientWidth / canvas.clientHeight;
-
-      this.camera.left = this.frustumSize * aspect / -2;
-      this.camera.right = this.frustumSize * aspect / 2;
-      this.camera.top = this.frustumSize / 2;
-      this.camera.bottom = this.frustumSize / -2;
-      this.camera.updateProjectionMatrix();
-
-      this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-
+      if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
+        this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+        const aspect = canvas.clientWidth / canvas.clientHeight;
+        this.camera.left = this.frustumSize * aspect / -2;
+        this.camera.right = this.frustumSize * aspect / 2;
+        this.camera.top = this.frustumSize / 2;
+        this.camera.bottom = this.frustumSize / -2;
+        this.camera.updateProjectionMatrix();
+      }
       this.updatePlayer();
       this.checkPlayerZone();
       this.updateCameraPosition();
@@ -321,9 +342,15 @@ export class FloorPlanComponent implements AfterViewInit {
     render();
   }
 
+  @HostListener('window:pointerup')
+  onGlobalPointerUp(): void {
+    if (!this.controls.enabled) {
+      this.controls.enabled = true;
+    }
+  }
+
   @HostListener('window:resize')
   onWindowResize() {
-    // Left empty because the render loop handles resizing
-
+    // empty
   }
 }
