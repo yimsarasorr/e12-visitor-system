@@ -13,6 +13,8 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "outputPath": "dist/e12-visitor-system",
+            "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
@@ -25,18 +27,20 @@
               }
             ],
             "styles": [
-              "src/styles.css",
+              "node_modules/@primeng/themes/aura-light-blue/theme.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/primeflex/primeflex.css"
-            ]
+              "node_modules/primeflex/primeflex.css",
+              "src/styles.css"
+            ],
+            "scripts": []
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "1.5mb",
+                  "maximumError": "2mb"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -85,7 +89,8 @@
             ],
             "styles": [
               "src/styles.css"
-            ]
+            ],
+            "scripts": []
           }
         }
       }
