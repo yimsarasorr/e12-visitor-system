@@ -4,7 +4,7 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist/e12-visitor-system"
+        "distDir": "dist/e12-visitor-system/browser"
       }
     }
   ],
