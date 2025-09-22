@@ -1,6 +1,6 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
 
-  <div class="view-toggle-container">
+  <div class="view-toggle-container" (click)="$event.stopPropagation()">
     <p-button
       (click)="toggleFullscreen()"
       [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
@@ -85,7 +85,7 @@
   [draggable]="false"
   [resizable]="false"
 >
-  <div *ngIf="selectedArea">
+  <div *ngIf="selectedArea" (click)="$event.stopPropagation()">
     <h3>{{ selectedArea.id }}</h3>
     <p>
       <strong>Color:</strong>

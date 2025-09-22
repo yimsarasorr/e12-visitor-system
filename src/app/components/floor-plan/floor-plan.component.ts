@@ -51,6 +51,9 @@ export class FloorPlanComponent implements AfterViewInit {
   public currentZoneId: string | null = null;
   public isDetailDialogVisible = false;
   public selectedArea: any = null;
+  
+  private cameraTargetPosition = new THREE.Vector3();
+  private cameraLookAtTarget = new THREE.Vector3();
 
   ngAfterViewInit(): void {
     this.createScene();
@@ -78,7 +81,6 @@ export class FloorPlanComponent implements AfterViewInit {
 
   toggleView(): void {
     this.currentView = this.currentView === 'game' ? 'top' : 'game';
-    this.updateCameraPosition();
   }
 
   toggleFullscreen(): void {
@@ -106,6 +108,12 @@ export class FloorPlanComponent implements AfterViewInit {
 
   private get canvas(): HTMLCanvasElement {
     return this.canvasRef.nativeElement;
+  }
+  
+  public onDialogHide(): void {
+    // เมื่อปิด Dialog ให้รีเซ็ตการซูม
+    this.camera.zoom = 1.0;
+    this.camera.updateProjectionMatrix();
   }
 
   private createScene(): void {
@@ -197,6 +205,8 @@ export class FloorPlanComponent implements AfterViewInit {
     this.player.position.set(0, this.playerSize, 0);
     this.player.castShadow = true;
     this.scene.add(this.player);
+    // กำหนดเป้าหมายเริ่มต้นของกล้องให้เป็นผู้เล่น
+    this.cameraLookAtTarget.copy(this.player.position);
   }
 
   private updatePlayer(): void {
@@ -231,7 +241,7 @@ export class FloorPlanComponent implements AfterViewInit {
       if (playerBox.intersectsBox(new THREE.Box3().setFromObject(obj))) return true;
     }
     for (const door of this.doorMeshes) {
-      if (this.currentUserAccessLevel < door.userData['accessLevel']) { // <-- แก้ไข
+      if (this.currentUserAccessLevel < door.userData['accessLevel']) {
         if (playerBox.intersectsBox(new THREE.Box3().setFromObject(door))) return true;
       }
     }
@@ -260,7 +270,11 @@ export class FloorPlanComponent implements AfterViewInit {
   
   @HostListener('window:click', ['$event'])
   onClick(event: MouseEvent) {
-    if (this.controls.enabled === false) return;
+    if (event.target !== this.canvasRef.nativeElement) {
+      return; // ถ้าสิ่งที่คลิกไม่ใช่ Canvas ของเรา ให้ออกจากฟังก์ชันทันที
+    }
+
+    if (this.isDetailDialogVisible || this.controls.enabled === false) return;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const rect = this.renderer.domElement.getBoundingClientRect();
@@ -270,9 +284,19 @@ export class FloorPlanComponent implements AfterViewInit {
     const intersects = raycaster.intersectObjects(this.floorMeshes);
     if (intersects.length > 0) {
       const clickedFloor = intersects[0].object;
-      if (clickedFloor.userData['type'] === 'floor') { // <-- แก้ไข
-        this.selectedArea = clickedFloor.userData['areaData']; // <-- แก้ไข
+      if (clickedFloor.userData['type'] === 'floor') {
+        this.selectedArea = clickedFloor.userData['areaData'];
         this.isDetailDialogVisible = true;
+        
+        // กำหนดเป้าหมายใหม่เป็นจุดกึ่งกลางของโซน
+        const area = this.selectedArea;
+        this.cameraLookAtTarget.x = (area.boundary.min.x + area.boundary.max.x) / 2;
+        this.cameraLookAtTarget.y = 0;
+        this.cameraLookAtTarget.z = (area.boundary.min.y + area.boundary.max.y) / 2;
+
+        // ซูมเข้า
+        this.camera.zoom = 1.5;
+        this.camera.updateProjectionMatrix();
       }
     }
   }
@@ -306,23 +330,32 @@ export class FloorPlanComponent implements AfterViewInit {
   }
   
   private updateCameraPosition(): void {
-    if (this.currentView === 'game') {
-      const offset = new THREE.Vector3(-8, 7, -8); 
-      const cameraTargetPosition = this.player.position.clone().add(offset);
-      this.camera.position.copy(cameraTargetPosition);
-      this.controls.target.set(this.player.position.x, 0, this.player.position.z);
+    if (this.isDetailDialogVisible) {
+      // ถ้า Dialog เปิดอยู่ ให้มองไปที่โซนที่เลือก
+      // this.cameraLookAtTarget ถูกตั้งค่าไว้แล้วใน onClick
     } else {
-      this.camera.position.set(this.player.position.x, 35, this.player.position.z); 
-      this.camera.rotation.set(-Math.PI / 2, 0, Math.PI);
-      this.controls.target.set(this.player.position.x, 0, this.player.position.z);
+      // ถ้า Dialog ปิดอยู่ ให้มองไปที่ผู้เล่น
+      this.cameraLookAtTarget.copy(this.player.position);
     }
-    this.camera.updateProjectionMatrix();
-    this.controls.update();
+    
+    // กำหนดเป้าหมาย "ตำแหน่ง" ของกล้อง
+    if (this.currentView === 'game') {
+      const offset = new THREE.Vector3(-8, 7, -8);
+      this.cameraTargetPosition.copy(this.cameraLookAtTarget).add(offset);
+    } else { // Top View
+      this.cameraTargetPosition.set(this.cameraLookAtTarget.x, 35, this.cameraLookAtTarget.z);
+    }
+
+    // ค่อยๆ เคลื่อนกล้องและจุดที่มองไปยังเป้าหมาย
+    const lerpAlpha = 0.05; // ค่าความเร็ว
+    this.camera.position.lerp(this.cameraTargetPosition, lerpAlpha);
+    this.controls.target.lerp(this.cameraLookAtTarget, lerpAlpha);
   }
 
   private startRenderingLoop(): void {
     const render = () => {
       requestAnimationFrame(render);
+      
       const canvas = this.renderer.domElement;
       if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
         this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
@@ -333,9 +366,11 @@ export class FloorPlanComponent implements AfterViewInit {
         this.camera.bottom = this.frustumSize / -2;
         this.camera.updateProjectionMatrix();
       }
+      
       this.updatePlayer();
       this.checkPlayerZone();
       this.updateCameraPosition();
+      
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
     };
@@ -351,6 +386,6 @@ export class FloorPlanComponent implements AfterViewInit {
 
   @HostListener('window:resize')
   onWindowResize() {
-    // empty
+    // Left empty because the render loop handles resizing
   }
 }
