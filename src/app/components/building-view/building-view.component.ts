@@ -1,0 +1,212 @@
+import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter } from '@angular/core';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
+
+// --- เชื่อมต่อ Library ให้ถูกต้อง ---
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+@Component({
+  selector: 'app-building-view',
+  standalone: true,
+  imports: [],
+  templateUrl: './building-view.component.html',
+  styleUrls: ['./building-view.component.css']
+})
+export class BuildingViewComponent implements AfterViewInit {
+  @ViewChild('canvasBuilding') private canvasRef!: ElementRef;
+  @Output() floorSelected = new EventEmitter<number>();
+
+  private scene!: THREE.Scene;
+  private camera!: THREE.PerspectiveCamera;
+  private renderer!: THREE.WebGLRenderer;
+  private controls!: OrbitControls;
+  private clickableFloors: THREE.Mesh[] = [];
+
+  ngAfterViewInit(): void {
+    this.createScene();
+    this.createBuildingModel();
+    this.startRenderingLoop();
+  }
+
+  private get canvas(): HTMLCanvasElement {
+    return this.canvasRef.nativeElement;
+  }
+
+  private createScene(): void {
+    this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0xEBF0F5);
+
+    this.camera = new THREE.PerspectiveCamera(50, this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000);
+    this.camera.position.set(80, 60, 80);
+
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.target.set(0, 20, 0);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    this.scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    directionalLight.position.set(50, 100, 25);
+    directionalLight.castShadow = true;
+    this.scene.add(directionalLight);
+
+    const groundGeo = new THREE.PlaneGeometry(200, 200);
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    this.scene.add(ground);
+  }
+
+  private createBuildingModel(): void {
+    const textureLoader = new THREE.TextureLoader();
+    const mainMaterial = new THREE.MeshStandardMaterial({ color: 0xEAE0D5 });
+    const accentMaterial = new THREE.MeshStandardMaterial({ color: 0x4B4B4B });
+    const windowTexture = textureLoader.load('assets/window-texture.png');
+    const windowMaterial = new THREE.MeshBasicMaterial({ map: windowTexture, transparent: true });
+
+    const floorHeight = 3.5;
+    const totalFloors = 12;
+    const buildingHeight = totalFloors * floorHeight;
+    const wingWidth = 40;
+    const wingDepth = 18;
+    const coreWidth = 14;
+    const coreDepth = 20;
+
+    const windowHeight = floorHeight * 0.7;
+    const windowWidth = 2.5;
+    const smallGap = 0.5;
+    const largeGap = 4.0;
+
+    // --- สร้างโครงสร้างหลักของตึก (ไม่รวมหน้าต่าง) ---
+    const buildingStructureGroup = new THREE.Group();
+    const leftWing = new THREE.Mesh(new THREE.BoxGeometry(wingWidth, buildingHeight, wingDepth), mainMaterial);
+    leftWing.position.set(-(wingWidth / 2 + coreWidth / 2), buildingHeight / 2, 0);
+    buildingStructureGroup.add(leftWing);
+
+    const rightWing = new THREE.Mesh(new THREE.BoxGeometry(wingWidth, buildingHeight, wingDepth), mainMaterial);
+    rightWing.position.set(wingWidth / 2 + coreWidth / 2, buildingHeight / 2, 0);
+    buildingStructureGroup.add(rightWing);
+    
+    const core = new THREE.Mesh(new THREE.BoxGeometry(coreWidth, buildingHeight, coreDepth), accentMaterial);
+    core.position.set(0, buildingHeight / 2, -(coreDepth - wingDepth) / 2);
+    buildingStructureGroup.add(core);
+    
+    const rooftopGeo = new THREE.BoxGeometry(10, 4, 15);
+    const rooftopStructure = new THREE.Mesh(rooftopGeo, mainMaterial);
+    rooftopStructure.position.set(0, buildingHeight + 2, 0);
+    buildingStructureGroup.add(rooftopStructure);
+
+    this.scene.add(buildingStructureGroup);
+
+    // --- สร้างหน้าต่างทีละบาน และ Add เข้า Scene โดยตรง ---
+    const windowGeo = new THREE.PlaneGeometry(windowWidth, windowHeight);
+    const zOffset = 0.1;
+
+    for (let i = 0; i < totalFloors; i++) {
+      const yPos = i * floorHeight + floorHeight / 2;
+
+      // -- Pattern 2-3-2 (ด้านหน้า) --
+      let currentX_left = -coreWidth / 2 - largeGap;
+      for (let j = 0; j < 2; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+      currentX_left -= (2 * windowWidth + 1 * smallGap + largeGap);
+      for (let j = 0; j < 3; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+      currentX_left -= (3 * windowWidth + 2 * smallGap + largeGap);
+      for (let j = 0; j < 2; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+
+      let currentX_right = coreWidth / 2 + largeGap;
+      for (let j = 0; j < 2; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+      currentX_right += (2 * windowWidth + 1 * smallGap + largeGap);
+      for (let j = 0; j < 3; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+      currentX_right += (3 * windowWidth + 2 * smallGap + largeGap);
+      for (let j = 0; j < 2; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+
+      // -- Pattern Lobby 3 (ด้านหน้า) --
+      const lobbyStartX = -(windowWidth + smallGap);
+      for (let j = 0; j < 3; j++) {
+        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
+        windowMesh.position.set(lobbyStartX + (j * (windowWidth + smallGap)), yPos, coreDepth / 2 + zOffset);
+        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
+      }
+    }
+
+    // --- สร้างกล่องใสสำหรับคลิก (เหมือนเดิม) ---
+    const clickBoxWidth = wingWidth * 2 + coreWidth;
+    const clickMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0 });
+    for (let i = 1; i <= totalFloors; i++) {
+      const floorBoxGeo = new THREE.BoxGeometry(clickBoxWidth, floorHeight, coreDepth);
+      const floorBox = new THREE.Mesh(floorBoxGeo, clickMaterial);
+      floorBox.position.set(0, (i - 1) * floorHeight + floorHeight / 2, 0);
+      floorBox.userData = { floor: i };
+      this.clickableFloors.push(floorBox);
+      this.scene.add(floorBox);
+    }
+  }
+  
+  @HostListener('window:click', ['$event'])
+  onClick(event: MouseEvent) {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, this.camera);
+    
+    const intersects = raycaster.intersectObjects(this.clickableFloors);
+    if (intersects.length > 0) {
+      const clickedFloor = intersects[0].object;
+      const floorNumber = clickedFloor.userData['floor'];
+      this.floorSelected.emit(floorNumber);
+    }
+  }
+
+  private startRenderingLoop(): void {
+    const render = () => {
+      requestAnimationFrame(render);
+      const canvas = this.renderer.domElement;
+      if (canvas.clientHeight > 0) {
+        const needResize = canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight;
+        if (needResize) {
+          this.renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
+          this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+          this.camera.updateProjectionMatrix();
+        }
+      }
+      this.controls.update();
+      this.renderer.render(this.scene, this.camera);
+    };
+    render();
+  }
+}

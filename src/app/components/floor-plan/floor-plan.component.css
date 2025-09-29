@@ -8,12 +8,29 @@ canvas {
   width: 100%;
   height: 100%;
   display: block;
+  box-sizing: border-box; /* Add this to account for padding/border */
+}
+
+.floor-plan-container {
+  position: relative;
+  width: 100%;
+  height: 70vh; /* กำหนดความสูงเป็นเปอร์เซ็นต์ของหน้าจอ */
+  min-height: 500px; /* กำหนดความสูงขั้นต่ำ */
+}
+
+.canvas-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #EBF0F5;
 }
 
 .floor-plan-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden; /* Add this to prevent scrolling issues */
 }
 
 .floor-plan-wrapper.fullscreen {
@@ -33,6 +50,19 @@ canvas {
   z-index: 10;
   display: flex;
   gap: 10px;
+}
+
+.auth-controls {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 5px;
+  border-radius: 8px;
 }
 
 .mobile-controls {
@@ -78,35 +108,40 @@ canvas {
   background-color: rgba(0, 86, 179, 0.9);
 }
 
-.zone-display {
+.info-display-container {
   position: absolute;
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   z-index: 5;
   pointer-events: none;
 }
 
+.zone-display {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  text-align: center;
+}
+
 @media (max-width: 1023px) {
-  .zone-display {
+  .info-display-container {
     bottom: 140px;
   }
 }
 
-.auth-controls {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  gap: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 5px;
-  border-radius: 8px;
+.status-locked {
+  color: #ff4c4c;
+  font-weight: bold;
+}
+
+.status-unlocked {
+  color: #4caf50;
+  font-weight: bold;
 }

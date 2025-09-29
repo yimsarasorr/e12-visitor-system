@@ -43,7 +43,35 @@
   border: 1px solid #ccc;
   border-radius: 8px;
   height: 600px;
+  min-height: 600px; /* Set a fixed min-height */
   position: relative;
   overflow: hidden;
   background: #e0e0e0;
+  box-sizing: border-box; /* Add this */
+}
+
+.main-content {
+  flex-grow: 1;
+  /* padding: 20px; ไม่ใช้ padding เพื่อให้ 3D เต็มพื้นที่ */
+  background-color: #f4f7f6;
+  overflow: hidden; /* ใช้ hidden แทน auto */
+  position: relative; /* เพิ่ม position relative */
+}
+
+/* เพิ่ม Style นี้เข้าไป */
+.floor-plan-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.floor-plan-container h2 {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(255,255,255,0.8);
+  padding: 5px 15px;
+  border-radius: 15px;
 }
