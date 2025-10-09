@@ -1,0 +1,105 @@
+.tree-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+}
+
+.tree-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tree-search .p-input-icon-left {
+  flex: 1;
+}
+
+.tree-search input[type='search'] {
+  width: 100%;
+}
+
+.search-feedback {
+  font-size: 0.85rem;
+  color: #dc3545;
+}
+
+.search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.search-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background-color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-result:hover,
+.search-result:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15);
+}
+
+.search-result__title {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.search-result__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.search-result__breadcrumb {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.tree-accordion {
+  flex: 1;
+  overflow: hidden;
+}
+
+.tree-accordion ::ng-deep .p-accordion-content {
+  padding: 0.75rem 0.5rem;
+}
+
+.tree-panel {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.tree-panel ::ng-deep .p-treenode-content {
+  gap: 0.5rem;
+}
+
+.tree-node__match ::ng-deep .p-treenode-label {
+  background-color: rgba(13, 110, 253, 0.12);
+  color: #0d47a1;
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+}
+
+@media (max-width: 992px) {
+  .search-result__breadcrumb {
+    max-width: 120px;
+  }
+}
