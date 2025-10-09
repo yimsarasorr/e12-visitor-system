@@ -1,8 +1,21 @@
-<p-tree 
-  #tree
-  [value]="treeData" 
-  selectionMode="single" 
-  [(selection)]="selectedNode"
-  (onNodeSelect)="onNodeSelect($event)"
-  styleClass="w-full md:w-30rem">
-</p-tree>
+<div class="tree-view-container">
+  <div class="tree-search">
+    <input
+      type="search"
+      [(ngModel)]="searchTerm"
+      (keydown)="onSearchKeydown($event)"
+      placeholder="ค้นหาห้อง โซน หรือประตู"
+      aria-label="ค้นหารายการในอาคาร"
+    />
+    <button type="button" (click)="onSearch()">Search</button>
+  </div>
+  <small *ngIf="notFound" class="search-feedback">ไม่พบผลลัพธ์ที่ตรงกับ "{{ searchTerm }}"</small>
+  <p-tree
+    #tree
+    [value]="treeData"
+    selectionMode="single"
+    [(selection)]="selectedNode"
+    (onNodeSelect)="onNodeSelect($event)"
+    styleClass="w-full md:w-30rem">
+  </p-tree>
+</div>

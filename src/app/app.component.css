@@ -23,6 +23,12 @@
   overflow: hidden;
   position: relative;
 }
+.main-content ::ng-deep .p-splitter {
+  border: none;
+}
+.main-content ::ng-deep .p-splitter-gutter {
+  background: transparent;
+}
 .panel {
   padding: 1rem;
   height: 100%;
@@ -39,7 +45,131 @@
   flex-shrink: 0;
 }
 :host ::ng-deep .p-tree {
-  border: none;
-  padding: 0;
   flex-grow: 1;
+}
+
+.building-selection {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 2.5rem;
+  align-items: center;
+  height: 100%;
+  padding: 2.5rem 3rem;
+  background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 55%),
+              radial-gradient(circle at bottom right, rgba(14,165,233,0.15), transparent 55%);
+}
+
+.selection-copy h2 {
+  font-size: 2rem;
+  color: #0f172a;
+  margin-bottom: 1rem;
+}
+
+.selection-copy p {
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.selection-copy button {
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.selection-copy button:hover {
+  background: #cbd5f5;
+  transform: translateY(-1px);
+}
+
+.selection-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: rgba(255,255,255,0.92);
+  border-radius: 18px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.panel-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.panel-section__subtitle {
+  margin: 0;
+  color: #64748b;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link-button:hover {
+  color: #1e40af;
+}
+
+.mini-building {
+  height: 280px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(96, 165, 250, 0.15));
+}
+
+.tree-section {
+  flex: 1;
+}
+
+.tree-section h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+@media (max-width: 1200px) {
+  .building-selection {
+    grid-template-columns: 1fr;
+    padding: 2rem;
+    gap: 1.5rem;
+  }
+
+  .selection-canvas {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 960px) {
+  .main-layout {
+    height: auto;
+  }
+
+  .building-selection {
+    padding: 1.5rem;
+  }
+
+  .selection-copy h2 {
+    font-size: 1.5rem;
+  }
 }

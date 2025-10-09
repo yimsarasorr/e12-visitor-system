@@ -1,35 +1,48 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
 
-  <div class="view-toggle-container" (click)="$event.stopPropagation()">
-    <p-button
-      (click)="toggleFullscreen()"
-      [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-      [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
-      styleClass="p-button-sm"
-    ></p-button>
-    <p-button
-      (click)="toggleView()"
-      [label]="currentView === 'game' ? 'Top View' : 'Game View'"
-      styleClass="p-button-sm p-button-secondary"
-    ></p-button>
-  </div>
+  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
+    <div class="floor-indicator" *ngIf="floorData">
+      <span class="floor-indicator__number">{{ floorData.floor }}</span>
+      <div class="floor-indicator__label">
+        <span class="floor-indicator__title">{{ floorData.floorName }}</span>
+        <span class="floor-indicator__subtitle">E12 Engineering Hub</span>
+      </div>
+    </div>
 
-  <div class="auth-controls" (click)="$event.stopPropagation()">
-    <p-button
-      (click)="simulateAuthentication(1)"
-      label="Guest Access"
-      styleClass="p-button-sm p-button-info"
-    ></p-button>
-    <p-button
-      (click)="simulateAuthentication(2)"
-      label="Staff Access"
-      styleClass="p-button-sm p-button-success"
-    ></p-button>
-    <p-button
-      (click)="simulateAuthentication(0)"
-      label="Logout"
-      styleClass="p-button-sm p-button-warning"
-    ></p-button>
+    <div class="access-terminal">
+      <span class="terminal-title">Face Access</span>
+      <div class="terminal-buttons">
+        <p-button
+          (click)="simulateAuthentication(-1)"
+          label="-1"
+          styleClass="p-button-sm p-button-danger"
+        ></p-button>
+        <p-button
+          (click)="simulateAuthentication(0)"
+          label="0"
+          styleClass="p-button-sm p-button-secondary"
+        ></p-button>
+        <p-button
+          (click)="simulateAuthentication(1)"
+          label="1"
+          styleClass="p-button-sm p-button-success"
+        ></p-button>
+      </div>
+    </div>
+
+    <div class="view-toggle-container">
+      <p-button
+        (click)="toggleView()"
+        [label]="currentView === 'iso' ? 'Top View' : 'ISO View'"
+        styleClass="p-button-sm p-button-secondary"
+      ></p-button>
+      <p-button
+        (click)="toggleFullscreen()"
+        [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
+        [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
+        styleClass="p-button-sm"
+      ></p-button>
+    </div>
   </div>
 
   <canvas #canvas></canvas>

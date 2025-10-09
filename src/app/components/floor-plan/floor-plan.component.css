@@ -43,26 +43,92 @@ canvas {
   background-color: #EBF0F5;
 }
 
-.view-toggle-container {
+.floor-plan-toolbar {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: 16px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   z-index: 10;
+  pointer-events: auto;
+}
+
+.floor-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 10px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.floor-indicator__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.floor-indicator__label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.floor-indicator__title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.floor-indicator__subtitle {
+  font-size: 0.75rem;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.access-terminal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(15, 23, 42, 0.85);
+  padding: 10px 18px;
+  border-radius: 16px;
+  color: #e2e8f0;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+}
+
+.terminal-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.terminal-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.view-toggle-container {
   display: flex;
   gap: 10px;
 }
 
-.auth-controls {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  gap: 10px;
-  background-color: rgba(255, 255, 255, 0.8);
-  padding: 5px;
-  border-radius: 8px;
+:host ::ng-deep .view-toggle-container .p-button {
+  white-space: nowrap;
 }
 
 .mobile-controls {
@@ -133,6 +199,28 @@ canvas {
 @media (max-width: 1023px) {
   .info-display-container {
     bottom: 140px;
+  }
+}
+
+@media (max-width: 900px) {
+  .floor-plan-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .floor-indicator,
+  .access-terminal,
+  .view-toggle-container {
+    justify-content: center;
+  }
+
+  .access-terminal {
+    align-items: stretch;
+  }
+
+  .terminal-buttons {
+    justify-content: center;
   }
 }
 
