@@ -75,36 +75,82 @@
   [(visible)]="isDetailDialogVisible"
   (onHide)="onDialogHide()"
   [modal]="true"
-  [style]="{ width: '50vw', 'max-width': '500px' }"
+  [style]="{ width: '50vw', 'max-width': '520px' }"
   [draggable]="false"
   [resizable]="false"
 >
-  <div *ngIf="selectedObject" (click)="$event.stopPropagation()">
-    <ng-container *ngIf="selectedObject.type === 'floor'">
-      <h3>{{ selectedObject.data.id }}</h3>
-      <p><strong>Type:</strong> Area</p>
-      <p><strong>Boundary:</strong></p>
-      <ul>
-        <li>Min: ({{ selectedObject.data.boundary.min.x }}, {{ selectedObject.data.boundary.min.y }})</li>
-        <li>Max: ({{ selectedObject.data.boundary.max.x }}, {{ selectedObject.data.boundary.max.y }})</li>
-      </ul>
-    </ng-container>
-
-    <ng-container *ngIf="selectedObject.type === 'door'">
-        <h3>{{ selectedObject.data.id }}</h3>
-        <p><strong>Type:</strong> Door</p>
-        <p><strong>Required Access Level:</strong> {{ selectedObject.data.accessLevel }}</p>
-        <p><strong>Your Access Level:</strong> {{ currentUserAccessLevel }}</p>
-        <p><strong>Status:</strong>
-            <span [ngClass]="currentUserAccessLevel >= selectedObject.data.accessLevel ? 'status-unlocked' : 'status-locked'">
-                {{ currentUserAccessLevel >= selectedObject.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
-            </span>
+  <div *ngIf="selectedObject as selected" class="detail-content" (click)="$event.stopPropagation()">
+    <div class="detail-header">
+      <div>
+        <h3>{{ selected.data?.name || selected.data?.id }}</h3>
+        <p class="detail-subtitle">
+          {{ getTypeLabel(selected.type) }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
         </p>
-    </ng-container>
+      </div>
+    </div>
 
-    <ng-container *ngIf="selectedObject.type === 'object'">
-        <h3>{{ selectedObject.data.id }}</h3>
-        <p><strong>Type:</strong> {{ selectedObject.data.type }}</p>
+    <ng-container [ngSwitch]="selected.type">
+      <ng-container *ngSwitchCase="'zone'">
+        <p class="detail-description">
+          พื้นที่โซนนี้มี {{ selected.data?.areas?.length || 0 }} พื้นที่ย่อย และ {{ selected.data?.rooms?.length || 0 }} ห้องหลัก
+        </p>
+        <div *ngIf="selected.data?.boundary" class="detail-section">
+          <h4>Boundary</h4>
+          <ul>
+            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
+            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'area'">
+        <div class="detail-section">
+          <h4>Area Boundary</h4>
+          <ul>
+            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
+            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'room'">
+        <div class="detail-section">
+          <h4>Room Boundary</h4>
+          <ul>
+            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
+            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
+          </ul>
+        </div>
+        <div class="detail-section" *ngIf="selected.data?.doors?.length">
+          <h4>Doors</h4>
+          <ul>
+            <li *ngFor="let door of selected.data.doors">
+              {{ door.id }} — Access Level: {{ door.accessLevel }}
+            </li>
+          </ul>
+        </div>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'door'">
+        <div class="detail-section">
+          <h4>Door Access</h4>
+          <p><strong>Required Level:</strong> {{ selected.data.accessLevel }}</p>
+          <p><strong>Your Level:</strong> {{ currentUserAccessLevel }}</p>
+          <p><strong>Status:</strong>
+            <span [ngClass]="currentUserAccessLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
+              {{ currentUserAccessLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
+            </span>
+          </p>
+        </div>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'object'">
+        <div class="detail-section">
+          <h4>Asset Details</h4>
+          <p><strong>Type:</strong> {{ selected.data.type }}</p>
+          <p *ngIf="selected.data?.boundary"><strong>Coverage:</strong> {{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }} → {{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }}</p>
+        </div>
+      </ng-container>
     </ng-container>
   </div>
 </p-dialog>

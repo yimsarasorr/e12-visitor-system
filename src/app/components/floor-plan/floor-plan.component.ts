@@ -5,6 +5,11 @@ import { ButtonModule } from 'primeng/button';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 
+interface Boundary {
+  min: { x: number; y: number };
+  max: { x: number; y: number };
+}
+
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
@@ -41,6 +46,14 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private unlockedDoorMaterial!: THREE.MeshStandardMaterial;
 
   public currentUserAccessLevel = 0;
+
+  private readonly typeLabelMap: Record<string, string> = {
+    zone: 'Zone',
+    area: 'Area',
+    room: 'Room',
+    door: 'Door',
+    object: 'Asset'
+  };
 
   private keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
@@ -87,6 +100,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     setTimeout(() => this.onWindowResize(), 50);
   }
 
+  getTypeLabel(type: string): string {
+    return this.typeLabelMap[type] ?? type;
+  }
+
   public move(event: Event, key: string, state: boolean): void {
     event.preventDefault();
     event.stopPropagation();
@@ -106,8 +123,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
   
   public onDialogHide(): void {
-    this.camera.zoom = 1.0;
-    this.camera.updateProjectionMatrix();
+    this.closeDetail();
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -191,6 +207,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     }
 
     this.floorData?.zones?.forEach((zone: any) => {
+      const zoneBoundaries: Boundary[] = [];
+
       zone.areas?.forEach((area: any) => {
         const areaWidth = area.boundary.max.x - area.boundary.min.x;
         const areaDepth = area.boundary.max.y - area.boundary.min.y;
@@ -199,9 +217,13 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         const areaFloor = new THREE.Mesh(areaGeo, areaMat);
         areaFloor.rotation.x = -Math.PI / 2;
         areaFloor.position.set(area.boundary.min.x + areaWidth / 2, 0.01, area.boundary.min.y + areaDepth / 2);
-        areaFloor.userData = { type: 'area', data: area };
+        const areaData = { ...area, floor: this.floorData.floor };
+        areaFloor.userData = { type: 'area', data: areaData };
         this.floorMeshes.push(areaFloor);
         this.floorGroup!.add(areaFloor);
+        if (area.boundary) {
+          zoneBoundaries.push(area.boundary);
+        }
       });
 
       zone.rooms?.forEach((room: any) => {
@@ -212,7 +234,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         const roomFloor = new THREE.Mesh(roomGeo, roomMat);
         roomFloor.rotation.x = -Math.PI / 2;
         roomFloor.position.set(room.boundary.min.x + roomWidth / 2, 0.02, room.boundary.min.y + roomDepth / 2);
-        roomFloor.userData = { type: 'room', data: room };
+        const roomData = { ...room, floor: this.floorData.floor };
+        roomFloor.userData = { type: 'room', data: roomData };
         this.floorMeshes.push(roomFloor);
         this.floorGroup!.add(roomFloor);
 
@@ -220,7 +243,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
           const geo = new THREE.BoxGeometry(door.size.width, this.wallHeight, door.size.depth);
           const mesh = new THREE.Mesh(geo, this.lockedDoorMaterial);
           mesh.position.set(door.center.x, this.wallHeight / 2, door.center.y);
-          mesh.userData = { type: 'door', data: door };
+          const doorData = { ...door, floor: this.floorData.floor };
+          mesh.userData = { type: 'door', data: doorData };
           this.doorMeshes.push(mesh);
           this.floorGroup!.add(mesh);
         });
@@ -232,10 +256,20 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         const geo = new THREE.BoxGeometry(width, this.wallHeight, depth);
         const mesh = new THREE.Mesh(geo, objectMaterial);
         mesh.position.set(obj.boundary.min.x + width / 2, this.wallHeight / 2, obj.boundary.min.y + depth / 2);
-        mesh.userData = { type: 'object', data: obj };
+        const objectData = { ...obj, floor: this.floorData.floor };
+        mesh.userData = { type: 'object', data: objectData };
         this.objectMeshes.push(mesh);
         this.floorGroup!.add(mesh);
       });
+
+      const combined = this.combineBoundaries(zoneBoundaries);
+      if (combined) {
+        zone.boundary = combined;
+        zone.center = {
+          x: (combined.min.x + combined.max.x) / 2,
+          y: (combined.min.y + combined.max.y) / 2
+        };
+      }
     });
 
     if (this.floorGroup) {
@@ -269,16 +303,30 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     let newZoneId: string | null = null;
   
     for (const zone of this.floorData.zones) {
-      if (zone.areas) {
-        for(const area of zone.areas) {
-            const bounds = area.boundary;
-            if (playerPos.x >= bounds.min.x && playerPos.x <= bounds.max.x && playerPos.z >= bounds.min.y && playerPos.z <= bounds.max.y) {
-                newZoneId = area.id;
-                break;
-            }
+      if (zone.rooms) {
+        for (const room of zone.rooms) {
+          if (room.boundary && this.containsPoint(room.boundary, playerPos)) {
+            newZoneId = room.id;
+            break;
+          }
         }
       }
       if (newZoneId) break;
+
+      if (zone.areas) {
+        for (const area of zone.areas) {
+          if (area.boundary && this.containsPoint(area.boundary, playerPos)) {
+            newZoneId = area.id;
+            break;
+          }
+        }
+      }
+      if (newZoneId) break;
+
+      if (zone.boundary && this.containsPoint(zone.boundary, playerPos)) {
+        newZoneId = zone.id;
+        break;
+      }
     }
 
     if (this.currentZoneId !== newZoneId) {
@@ -367,9 +415,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     const intersects = raycaster.intersectObjects(clickableObjects);
     if (intersects.length > 0) {
       const clickedObj = intersects[0].object;
-      this.selectedObject = clickedObj.userData as { type: string, data: any };
-      this.isDetailDialogVisible = true;
-      this.panCameraToObject(this.selectedObject.data);
+      const payload = clickedObj.userData as { type: string, data: any };
+      if (payload?.type && payload.data) {
+        this.openDetail(payload.type, payload.data);
+      }
     }
   }
 
@@ -452,6 +501,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private reloadFloorPlan(): void {
     this.currentZoneId = null;
     this.zoneChanged.emit(null);
+    this.closeDetail();
     this.isDetailDialogVisible = false;
     this.selectedObject = null;
     this.playerPositionDisplay = '';
@@ -476,5 +526,62 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
 
   private disposeMesh(mesh: THREE.Mesh): void {
     mesh.geometry.dispose();
+  }
+
+  private focusOnExternalSelection(selection: any): void {
+    if (!selection) {
+      return;
+    }
+    const type = selection.type ?? 'zone';
+    const data = selection.data ?? selection;
+    this.openDetail(type, data);
+  }
+
+  private openDetail(type: string, data: any): void {
+    this.panCameraToObject(data);
+    this.selectedObject = { type, data };
+    this.isDetailDialogVisible = true;
+  }
+
+  private closeDetail(): void {
+    this.isDetailDialogVisible = false;
+    this.selectedObject = null;
+    this.resetCameraAfterDetail();
+  }
+
+  private resetCameraAfterDetail(): void {
+    if (!this.camera) {
+      return;
+    }
+    this.camera.zoom = 1.0;
+    this.camera.updateProjectionMatrix();
+    if (this.player) {
+      this.cameraLookAtTarget.copy(this.player.position);
+    }
+  }
+
+  private containsPoint(boundary: Boundary, position: THREE.Vector3): boolean {
+    return (
+      position.x >= boundary.min.x &&
+      position.x <= boundary.max.x &&
+      position.z >= boundary.min.y &&
+      position.z <= boundary.max.y
+    );
+  }
+
+  private combineBoundaries(boundaries: Boundary[]): Boundary | null {
+    if (!boundaries.length) {
+      return null;
+    }
+    return boundaries.reduce((acc, boundary) => ({
+      min: {
+        x: Math.min(acc.min.x, boundary.min.x),
+        y: Math.min(acc.min.y, boundary.min.y)
+      },
+      max: {
+        x: Math.max(acc.max.x, boundary.max.x),
+        y: Math.max(acc.max.y, boundary.max.y)
+      }
+    }));
   }
 }

@@ -196,6 +196,53 @@ canvas {
   text-align: center;
 }
 
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #0f172a;
+}
+
+.detail-subtitle {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.detail-description {
+  margin: 0;
+  color: #475569;
+}
+
+.detail-section {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.detail-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.detail-section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #475569;
+}
+
+.detail-section p {
+  margin: 0.25rem 0;
+  color: #475569;
+}
+
 @media (max-width: 1023px) {
   .info-display-container {
     bottom: 140px;

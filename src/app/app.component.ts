@@ -37,11 +37,7 @@ export class App {
     if (data?.floor && this.selectedFloor?.floor !== data.floor) {
       this.onFloorSelected(data.floor);
     }
-    if (data?.boundary || data?.center) {
-      this.selectedNodeData = data;
-    } else {
-      this.selectedNodeData = null;
-    }
+    this.selectedNodeData = data ?? null;
   }
 
   onFloorSelected(floorNumber: number): void {

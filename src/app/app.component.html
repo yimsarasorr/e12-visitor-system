@@ -44,6 +44,7 @@
               <h3>Zone Directory</h3>
               <app-tree-view
                 [data]="buildingData"
+                [activeFloor]="selectedFloor?.floor ?? null"
                 [highlightedId]="highlightedId"
                 (nodeSelected)="onTreeNodeSelected($event)">
               </app-tree-view>
