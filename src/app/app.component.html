@@ -1,24 +1,29 @@
 <div class="main-layout">
   <header class="main-header">
     <h1>E12 Visitor Management System</h1>
-    <p-button 
-      *ngIf="selectedFloor" 
-      label="Back to Building View" 
-      icon="pi pi-arrow-left" 
-      (click)="goBackToBuildingView()"
-      styleClass="p-button-sm p-button-text">
-    </p-button>
   </header>
   
   <main class="main-content">
-    <app-building-view 
-      *ngIf="!selectedFloor" 
-      (floorSelected)="onFloorSelected($event)">
-    </app-building-view>
-
-    <div *ngIf="selectedFloor" class="floor-plan-container">
-      <h2>Floor {{ selectedFloor }}</h2>
-      <app-floor-plan></app-floor-plan>
-    </div>
+    <p-splitter [style]="{'height': '100%'}" [panelSizes]="[25, 75]">
+      <ng-template pTemplate>
+        <div class="panel panel-left">
+          <h3>Building Structure</h3>
+          <app-tree-view 
+            [data]="buildingData"
+            [highlightedId]="highlightedId"
+            (nodeSelected)="onTreeNodeSelected($event)">
+          </app-tree-view>
+        </div>
+      </ng-template>
+      <ng-template pTemplate>
+        <div class="panel panel-right">
+          <app-floor-plan 
+            [floorData]="buildingData.floors[0]"
+            [panToTarget]="selectedNodeData"
+            (zoneChanged)="onZoneChanged($event)">
+          </app-floor-plan>
+        </div>
+      </ng-template>
+    </p-splitter>
   </main>
 </div>

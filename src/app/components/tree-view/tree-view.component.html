@@ -1,0 +1,8 @@
+<p-tree 
+  #tree
+  [value]="treeData" 
+  selectionMode="single" 
+  [(selection)]="selectedNode"
+  (onNodeSelect)="onNodeSelect($event)"
+  styleClass="w-full md:w-30rem">
+</p-tree>

@@ -1,31 +1,28 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common'; // Import CommonModule
+import { CommonModule } from '@angular/common';
 import { FloorPlanComponent } from "./components/floor-plan/floor-plan.component";
-import { BuildingViewComponent } from './components/building-view/building-view.component'; // Import ใหม่
+import { TreeViewComponent } from './components/tree-view/tree-view.component';
 import { ButtonModule } from 'primeng/button';
+import { SplitterModule } from 'primeng/splitter';
+import floorData from './components/floor-plan/e12-floor1.json';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule, // เพิ่ม CommonModule
-    FloorPlanComponent,
-    BuildingViewComponent, // เพิ่ม Component ใหม่
-    ButtonModule
-  ],
+  imports: [ CommonModule, FloorPlanComponent, TreeViewComponent, ButtonModule, SplitterModule ],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrls: ['./app.component.css']
 })
 export class App {
-  title = 'e12-visitor-system';
-  selectedFloor: number | null = null; // ตัวแปรสำหรับเก็บชั้นที่เลือก
+  buildingData: any = floorData;
+  highlightedId: string | null = null;
+  selectedNodeData: any = null;
 
-  onFloorSelected(floor: number): void {
-    console.log(`Floor ${floor} selected, showing floor plan.`);
-    this.selectedFloor = floor;
+  onZoneChanged(id: string | null): void {
+    this.highlightedId = id;
   }
 
-  goBackToBuildingView(): void {
-    this.selectedFloor = null;
+  onTreeNodeSelected(data: any): void {
+    this.selectedNodeData = data;
   }
 }
