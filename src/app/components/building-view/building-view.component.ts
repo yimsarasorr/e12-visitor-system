@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
@@ -15,20 +15,35 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
   templateUrl: './building-view.component.html',
   styleUrls: ['./building-view.component.css']
 })
-export class BuildingViewComponent implements AfterViewInit {
+export class BuildingViewComponent implements AfterViewInit, OnChanges {
   @ViewChild('canvasBuilding') private canvasRef!: ElementRef;
   @Output() floorSelected = new EventEmitter<number>();
+  @Input() floors: any[] = [];
+  @Input() activeFloor: number | null = null;
 
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
   private controls!: OrbitControls;
   private clickableFloors: THREE.Mesh[] = [];
+  private floorOverlays: THREE.Mesh[] = [];
+  private floorLabels: THREE.Sprite[] = [];
+
+  private floorColors: string[] = [
+    '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
+    '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
+  ];
 
   ngAfterViewInit(): void {
     this.createScene();
     this.createBuildingModel();
     this.startRenderingLoop();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['activeFloor'] && this.floorOverlays.length > 0) {
+      this.updateFloorHighlights();
+    }
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -74,7 +89,7 @@ export class BuildingViewComponent implements AfterViewInit {
     const windowMaterial = new THREE.MeshBasicMaterial({ map: windowTexture, transparent: true });
 
     const floorHeight = 3.5;
-    const totalFloors = 12;
+    const totalFloors = this.floors?.length || 12;
     const buildingHeight = totalFloors * floorHeight;
     const wingWidth = 40;
     const wingDepth = 18;
@@ -164,32 +179,90 @@ export class BuildingViewComponent implements AfterViewInit {
 
     // --- สร้างกล่องใสสำหรับคลิก (เหมือนเดิม) ---
     const clickBoxWidth = wingWidth * 2 + coreWidth;
-    const clickMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.0 });
     for (let i = 1; i <= totalFloors; i++) {
-      const floorBoxGeo = new THREE.BoxGeometry(clickBoxWidth, floorHeight, coreDepth);
-      const floorBox = new THREE.Mesh(floorBoxGeo, clickMaterial);
-      floorBox.position.set(0, (i - 1) * floorHeight + floorHeight / 2, 0);
-      floorBox.userData = { floor: i };
-      this.clickableFloors.push(floorBox);
-      this.scene.add(floorBox);
+      const color = this.floors?.[i - 1]?.color || this.floorColors[(i - 1) % this.floorColors.length];
+      const overlayMaterial = new THREE.MeshStandardMaterial({
+        color,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false
+      });
+      const floorBoxGeo = new THREE.BoxGeometry(clickBoxWidth, floorHeight, coreDepth + 1);
+      const floorOverlay = new THREE.Mesh(floorBoxGeo, overlayMaterial);
+      floorOverlay.position.set(0, (i - 1) * floorHeight + floorHeight / 2, 0);
+      floorOverlay.userData = { floor: i };
+      floorOverlay.renderOrder = 1;
+      this.clickableFloors.push(floorOverlay);
+      this.floorOverlays.push(floorOverlay);
+      this.scene.add(floorOverlay);
+
+      const sprite = this.createFloorLabelSprite(i);
+      sprite.position.set(-(wingWidth / 2 + coreWidth / 2) - 5, (i - 1) * floorHeight + 0.2, wingDepth / 2 + 1);
+      this.floorLabels.push(sprite);
+      this.scene.add(sprite);
     }
+
+    this.updateFloorHighlights();
   }
-  
+
   @HostListener('window:click', ['$event'])
   onClick(event: MouseEvent) {
+    if (!this.renderer || event.target !== this.renderer.domElement) {
+      return;
+    }
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const rect = this.renderer.domElement.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, this.camera);
-    
+
     const intersects = raycaster.intersectObjects(this.clickableFloors);
     if (intersects.length > 0) {
       const clickedFloor = intersects[0].object;
       const floorNumber = clickedFloor.userData['floor'];
       this.floorSelected.emit(floorNumber);
+      this.activeFloor = floorNumber;
+      this.updateFloorHighlights();
     }
+  }
+
+  private updateFloorHighlights(): void {
+    if (!this.floorOverlays.length) return;
+    this.floorOverlays.forEach((mesh, index) => {
+      const material = mesh.material as THREE.MeshStandardMaterial;
+      const isActive = this.activeFloor === index + 1;
+      material.opacity = isActive ? 0.75 : 0.35;
+      material.emissive = new THREE.Color(isActive ? '#ffffff' : '#000000');
+      material.emissiveIntensity = isActive ? 0.2 : 0.0;
+    });
+
+    this.floorLabels.forEach((label, index) => {
+      label.material.opacity = this.activeFloor ? (this.activeFloor === index + 1 ? 1 : 0.4) : 0.8;
+    });
+  }
+
+  private createFloorLabelSprite(floorNumber: number): THREE.Sprite {
+    const size = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d')!;
+    context.fillStyle = 'rgba(255,255,255,0.85)';
+    context.beginPath();
+    context.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#1f2933';
+    context.font = 'bold 48px "Inter", Arial, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(floorNumber.toString(), size / 2, size / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(6, 6, 1);
+    return sprite;
   }
 
   private startRenderingLoop(): void {

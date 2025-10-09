@@ -5,6 +5,11 @@ import { ButtonModule } from 'primeng/button';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 
+interface Boundary {
+  min: { x: number; y: number };
+  max: { x: number; y: number };
+}
+
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
@@ -35,15 +40,24 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private objectMeshes: THREE.Mesh[] = [];
   private floorMeshes: THREE.Mesh[] = [];
   private doorMeshes: THREE.Mesh[] = [];
+  private floorGroup: THREE.Group | null = null;
 
   private lockedDoorMaterial!: THREE.MeshStandardMaterial;
   private unlockedDoorMaterial!: THREE.MeshStandardMaterial;
 
   public currentUserAccessLevel = 0;
 
+  private readonly typeLabelMap: Record<string, string> = {
+    zone: 'Zone',
+    area: 'Area',
+    room: 'Room',
+    door: 'Door',
+    object: 'Asset'
+  };
+
   private keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-  public currentView: 'game' | 'top' = 'game';
+  public currentView: 'iso' | 'top' = 'iso';
   public isFullscreen = false;
   public currentZoneId: string | null = null;
   public isDetailDialogVisible = false;
@@ -56,8 +70,16 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   constructor(private decimalPipe: DecimalPipe) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.isInitialized && changes['panToTarget'] && this.panToTarget) {
-      this.panCameraToObject(this.panToTarget);
+    if (this.isInitialized && changes['floorData'] && this.floorData) {
+      this.reloadFloorPlan();
+    }
+    if (this.isInitialized && changes['panToTarget']) {
+      const selection = changes['panToTarget'].currentValue;
+      if (selection) {
+        this.focusOnExternalSelection(selection);
+      } else {
+        this.closeDetail();
+      }
     }
   }
 
@@ -75,12 +97,16 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   // --- START: ฟังก์ชันที่ตกหล่นไป (เพิ่มกลับเข้ามาทั้งหมด) ---
 
   toggleView(): void {
-    this.currentView = this.currentView === 'game' ? 'top' : 'game';
+    this.currentView = this.currentView === 'iso' ? 'top' : 'iso';
   }
 
   toggleFullscreen(): void {
     this.isFullscreen = !this.isFullscreen;
     setTimeout(() => this.onWindowResize(), 50);
+  }
+
+  getTypeLabel(type: string): string {
+    return this.typeLabelMap[type] ?? type;
   }
 
   public move(event: Event, key: string, state: boolean): void {
@@ -102,8 +128,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
   
   public onDialogHide(): void {
-    this.camera.zoom = 1.0;
-    this.camera.updateProjectionMatrix();
+    this.closeDetail();
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -163,21 +188,32 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
 
   private loadFloorPlan(): void {
-    const floorGroup = new THREE.Group();
+    if (this.floorGroup) {
+      this.disposeFloorGroup();
+    }
+
+    this.floorGroup = new THREE.Group();
     const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x556677 });
     const objectMaterial = new THREE.MeshStandardMaterial({ color: 0x445566 });
-  
-    if (this.floorData.walls) {
+
+    this.wallMeshes = [];
+    this.objectMeshes = [];
+    this.floorMeshes = [];
+    this.doorMeshes = [];
+
+    if (this.floorData?.walls) {
       this.floorData.walls.forEach((wall: any) => {
         const start = new THREE.Vector3(wall.start.x, 0, wall.start.y);
         const end = new THREE.Vector3(wall.end.x, 0, wall.end.y);
         const wallMesh = this.buildWallMesh(start, end, this.wallHeight, wallMaterial);
         this.wallMeshes.push(wallMesh);
-        floorGroup.add(wallMesh);
+        this.floorGroup!.add(wallMesh);
       });
     }
-  
-    this.floorData.zones.forEach((zone: any) => {
+
+    this.floorData?.zones?.forEach((zone: any) => {
+      const zoneBoundaries: Boundary[] = [];
+
       zone.areas?.forEach((area: any) => {
         const areaWidth = area.boundary.max.x - area.boundary.min.x;
         const areaDepth = area.boundary.max.y - area.boundary.min.y;
@@ -186,11 +222,15 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         const areaFloor = new THREE.Mesh(areaGeo, areaMat);
         areaFloor.rotation.x = -Math.PI / 2;
         areaFloor.position.set(area.boundary.min.x + areaWidth / 2, 0.01, area.boundary.min.y + areaDepth / 2);
-        areaFloor.userData = { type: 'area', data: area };
+        const areaData = { ...area, floor: this.floorData.floor };
+        areaFloor.userData = { type: 'area', data: areaData };
         this.floorMeshes.push(areaFloor);
-        floorGroup.add(areaFloor);
+        this.floorGroup!.add(areaFloor);
+        if (area.boundary) {
+          zoneBoundaries.push(area.boundary);
+        }
       });
-  
+
       zone.rooms?.forEach((room: any) => {
         const roomWidth = room.boundary.max.x - room.boundary.min.x;
         const roomDepth = room.boundary.max.y - room.boundary.min.y;
@@ -199,42 +239,73 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         const roomFloor = new THREE.Mesh(roomGeo, roomMat);
         roomFloor.rotation.x = -Math.PI / 2;
         roomFloor.position.set(room.boundary.min.x + roomWidth / 2, 0.02, room.boundary.min.y + roomDepth / 2);
-        roomFloor.userData = { type: 'room', data: room };
+        const roomData = { ...room, floor: this.floorData.floor };
+        roomFloor.userData = { type: 'room', data: roomData };
         this.floorMeshes.push(roomFloor);
-        floorGroup.add(roomFloor);
-  
+        this.floorGroup!.add(roomFloor);
+        if (room.boundary) {
+          zoneBoundaries.push(room.boundary);
+        }
+
         room.doors?.forEach((door: any) => {
           const geo = new THREE.BoxGeometry(door.size.width, this.wallHeight, door.size.depth);
           const mesh = new THREE.Mesh(geo, this.lockedDoorMaterial);
           mesh.position.set(door.center.x, this.wallHeight / 2, door.center.y);
-          mesh.userData = { type: 'door', data: door };
+          const doorData = { ...door, floor: this.floorData.floor };
+          mesh.userData = { type: 'door', data: doorData };
           this.doorMeshes.push(mesh);
-          floorGroup.add(mesh);
+          this.floorGroup!.add(mesh);
         });
       });
-  
+
       zone.objects?.forEach((obj: any) => {
         const width = obj.boundary.max.x - obj.boundary.min.x;
         const depth = obj.boundary.max.y - obj.boundary.min.y;
         const geo = new THREE.BoxGeometry(width, this.wallHeight, depth);
         const mesh = new THREE.Mesh(geo, objectMaterial);
         mesh.position.set(obj.boundary.min.x + width / 2, this.wallHeight / 2, obj.boundary.min.y + depth / 2);
-        mesh.userData = { type: 'object', data: obj };
+        const objectData = { ...obj, floor: this.floorData.floor };
+        mesh.userData = { type: 'object', data: objectData };
         this.objectMeshes.push(mesh);
-        floorGroup.add(mesh);
+        this.floorGroup!.add(mesh);
+        if (obj.boundary) {
+          zoneBoundaries.push(obj.boundary);
+        }
       });
-    });
-  
-    this.scene.add(floorGroup);
 
-    const gridHelper = new THREE.GridHelper(150, 150);
-    this.scene.add(gridHelper);
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    this.scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    directionalLight.position.set(-10, 20, -10);
-    directionalLight.castShadow = true;
-    this.scene.add(directionalLight);
+      const combined = this.combineBoundaries(zoneBoundaries);
+      if (combined) {
+        zone.boundary = combined;
+        zone.center = {
+          x: (combined.min.x + combined.max.x) / 2,
+          y: (combined.min.y + combined.max.y) / 2
+        };
+      }
+    });
+
+    if (this.floorGroup) {
+      this.scene.add(this.floorGroup);
+    }
+
+    if (!this.scene.getObjectByName('gridHelper')) {
+      const gridHelper = new THREE.GridHelper(150, 150);
+      gridHelper.name = 'gridHelper';
+      this.scene.add(gridHelper);
+    }
+
+    if (!this.scene.getObjectByName('ambientLight')) {
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      ambientLight.name = 'ambientLight';
+      this.scene.add(ambientLight);
+    }
+
+    if (!this.scene.getObjectByName('directionalLight')) {
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      directionalLight.position.set(-10, 20, -10);
+      directionalLight.castShadow = true;
+      directionalLight.name = 'directionalLight';
+      this.scene.add(directionalLight);
+    }
   }
 
   private checkPlayerZone(): void {
@@ -243,16 +314,30 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     let newZoneId: string | null = null;
   
     for (const zone of this.floorData.zones) {
-      if (zone.areas) {
-        for(const area of zone.areas) {
-            const bounds = area.boundary;
-            if (playerPos.x >= bounds.min.x && playerPos.x <= bounds.max.x && playerPos.z >= bounds.min.y && playerPos.z <= bounds.max.y) {
-                newZoneId = area.id;
-                break;
-            }
+      if (zone.rooms) {
+        for (const room of zone.rooms) {
+          if (room.boundary && this.containsPoint(room.boundary, playerPos)) {
+            newZoneId = room.id;
+            break;
+          }
         }
       }
       if (newZoneId) break;
+
+      if (zone.areas) {
+        for (const area of zone.areas) {
+          if (area.boundary && this.containsPoint(area.boundary, playerPos)) {
+            newZoneId = area.id;
+            break;
+          }
+        }
+      }
+      if (newZoneId) break;
+
+      if (zone.boundary && this.containsPoint(zone.boundary, playerPos)) {
+        newZoneId = zone.id;
+        break;
+      }
     }
 
     if (this.currentZoneId !== newZoneId) {
@@ -314,7 +399,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     }
     let targetCameraPos = new THREE.Vector3();
     const cameraLookAt = this.cameraLookAtTarget;
-    if (this.currentView === 'game') {
+    if (this.currentView === 'iso') {
       const offset = new THREE.Vector3(-8, 7, -8);
       targetCameraPos.copy(cameraLookAt).add(offset);
     } else {
@@ -341,9 +426,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     const intersects = raycaster.intersectObjects(clickableObjects);
     if (intersects.length > 0) {
       const clickedObj = intersects[0].object;
-      this.selectedObject = clickedObj.userData as { type: string, data: any };
-      this.isDetailDialogVisible = true;
-      this.panCameraToObject(this.selectedObject.data);
+      const payload = clickedObj.userData as { type: string, data: any };
+      if (payload?.type && payload.data) {
+        this.openDetail(payload.type, payload.data);
+      }
     }
   }
 
@@ -421,5 +507,90 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
       this.camera.bottom = this.frustumSize / -2;
       this.camera.updateProjectionMatrix();
     }
+  }
+
+  private reloadFloorPlan(): void {
+    this.currentZoneId = null;
+    this.zoneChanged.emit(null);
+    this.closeDetail();
+    this.playerPositionDisplay = '';
+    this.loadFloorPlan();
+    if (this.player) {
+      this.player.position.set(0, this.playerSize, 0);
+      this.cameraLookAtTarget.copy(this.player.position);
+    }
+    this.updateDoorMaterials();
+  }
+
+  private disposeFloorGroup(): void {
+    if (!this.floorGroup) return;
+    this.floorGroup.children.forEach(child => {
+      if (child instanceof THREE.Mesh) {
+        this.disposeMesh(child);
+      }
+    });
+    this.scene.remove(this.floorGroup);
+    this.floorGroup = null;
+  }
+
+  private disposeMesh(mesh: THREE.Mesh): void {
+    mesh.geometry.dispose();
+  }
+
+  private focusOnExternalSelection(selection: any): void {
+    if (!selection) {
+      return;
+    }
+    const type = selection.type ?? 'zone';
+    const data = selection.data ?? selection;
+    this.openDetail(type, data);
+  }
+
+  private openDetail(type: string, data: any): void {
+    this.panCameraToObject(data);
+    this.selectedObject = { type, data };
+    this.isDetailDialogVisible = true;
+  }
+
+  private closeDetail(): void {
+    this.isDetailDialogVisible = false;
+    this.selectedObject = null;
+    this.resetCameraAfterDetail();
+  }
+
+  private resetCameraAfterDetail(): void {
+    if (!this.camera) {
+      return;
+    }
+    this.camera.zoom = 1.0;
+    this.camera.updateProjectionMatrix();
+    if (this.player) {
+      this.cameraLookAtTarget.copy(this.player.position);
+    }
+  }
+
+  private containsPoint(boundary: Boundary, position: THREE.Vector3): boolean {
+    return (
+      position.x >= boundary.min.x &&
+      position.x <= boundary.max.x &&
+      position.z >= boundary.min.y &&
+      position.z <= boundary.max.y
+    );
+  }
+
+  private combineBoundaries(boundaries: Boundary[]): Boundary | null {
+    if (!boundaries.length) {
+      return null;
+    }
+    return boundaries.reduce((acc, boundary) => ({
+      min: {
+        x: Math.min(acc.min.x, boundary.min.x),
+        y: Math.min(acc.min.y, boundary.min.y)
+      },
+      max: {
+        x: Math.max(acc.max.x, boundary.max.x),
+        y: Math.max(acc.max.y, boundary.max.y)
+      }
+    }));
   }
 }

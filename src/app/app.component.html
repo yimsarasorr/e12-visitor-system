@@ -4,26 +4,63 @@
   </header>
   
   <main class="main-content">
-    <p-splitter [style]="{'height': '100%'}" [panelSizes]="[25, 75]">
-      <ng-template pTemplate>
-        <div class="panel panel-left">
-          <h3>Building Structure</h3>
-          <app-tree-view 
-            [data]="buildingData"
-            [highlightedId]="highlightedId"
-            (nodeSelected)="onTreeNodeSelected($event)">
-          </app-tree-view>
+    <ng-container *ngIf="!selectedFloor; else floorWorkspace">
+      <div class="building-selection">
+        <div class="selection-copy">
+          <h2>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h2>
+          <p>เลือกชั้นที่ต้องการเพื่อดูแผนผัง พื้นที่ และระดับการเข้าถึงสำหรับ Visitor, Staff หรือ Blacklist</p>
+          <button type="button" *ngIf="selectedFloorIndex !== null" (click)="resetToBuildingOverview()">รีเซ็ตมุมมอง</button>
         </div>
-      </ng-template>
-      <ng-template pTemplate>
-        <div class="panel panel-right">
-          <app-floor-plan 
-            [floorData]="buildingData.floors[0]"
-            [panToTarget]="selectedNodeData"
-            (zoneChanged)="onZoneChanged($event)">
-          </app-floor-plan>
+        <div class="selection-canvas">
+          <app-building-view
+            [floors]="buildingData.floors"
+            (floorSelected)="onFloorSelected($event)">
+          </app-building-view>
         </div>
-      </ng-template>
-    </p-splitter>
+      </div>
+    </ng-container>
+
+    <ng-template #floorWorkspace>
+      <p-splitter [style]="{'height': '100%'}" [panelSizes]="[32, 68]">
+        <ng-template pTemplate>
+          <div class="panel panel-left">
+            <div class="panel-section">
+              <div class="panel-section__header">
+                <div>
+                  <h3>{{ buildingData.buildingName }}</h3>
+                  <p class="panel-section__subtitle">ชั้น {{ selectedFloor?.floor }}</p>
+                </div>
+                <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
+              </div>
+              <div class="mini-building">
+                <app-building-view
+                  [floors]="buildingData.floors"
+                  [activeFloor]="selectedFloor?.floor ?? null"
+                  (floorSelected)="onFloorSelected($event)">
+                </app-building-view>
+              </div>
+            </div>
+            <div class="panel-section tree-section">
+              <h3>Zone Directory</h3>
+              <app-tree-view
+                [data]="buildingData"
+                [activeFloor]="selectedFloor?.floor ?? null"
+                [highlightedId]="highlightedId"
+                (nodeSelected)="onTreeNodeSelected($event)">
+              </app-tree-view>
+            </div>
+          </div>
+        </ng-template>
+        <ng-template pTemplate>
+          <div class="panel panel-right">
+            <app-floor-plan
+              [floorData]="selectedFloor"
+              [panToTarget]="selectedNodeData"
+              (zoneChanged)="onZoneChanged($event)">
+            </app-floor-plan>
+          </div>
+        </ng-template>
+      </p-splitter>
+    </ng-template>
   </main>
 </div>
