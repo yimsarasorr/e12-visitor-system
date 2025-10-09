@@ -73,8 +73,13 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     if (this.isInitialized && changes['floorData'] && this.floorData) {
       this.reloadFloorPlan();
     }
-    if (this.isInitialized && changes['panToTarget'] && this.panToTarget) {
-      this.panCameraToObject(this.panToTarget);
+    if (this.isInitialized && changes['panToTarget']) {
+      const selection = changes['panToTarget'].currentValue;
+      if (selection) {
+        this.focusOnExternalSelection(selection);
+      } else {
+        this.closeDetail();
+      }
     }
   }
 
@@ -238,6 +243,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         roomFloor.userData = { type: 'room', data: roomData };
         this.floorMeshes.push(roomFloor);
         this.floorGroup!.add(roomFloor);
+        if (room.boundary) {
+          zoneBoundaries.push(room.boundary);
+        }
 
         room.doors?.forEach((door: any) => {
           const geo = new THREE.BoxGeometry(door.size.width, this.wallHeight, door.size.depth);
@@ -260,6 +268,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         mesh.userData = { type: 'object', data: objectData };
         this.objectMeshes.push(mesh);
         this.floorGroup!.add(mesh);
+        if (obj.boundary) {
+          zoneBoundaries.push(obj.boundary);
+        }
       });
 
       const combined = this.combineBoundaries(zoneBoundaries);
@@ -502,8 +513,6 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     this.currentZoneId = null;
     this.zoneChanged.emit(null);
     this.closeDetail();
-    this.isDetailDialogVisible = false;
-    this.selectedObject = null;
     this.playerPositionDisplay = '';
     this.loadFloorPlan();
     if (this.player) {

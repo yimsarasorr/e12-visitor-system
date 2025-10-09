@@ -1,21 +1,69 @@
 <div class="tree-view-container">
   <div class="tree-search">
-    <input
-      type="search"
-      [(ngModel)]="searchTerm"
-      (keydown)="onSearchKeydown($event)"
-      placeholder="ค้นหาห้อง โซน หรือประตู"
-      aria-label="ค้นหารายการในอาคาร"
-    />
-    <button type="button" (click)="onSearch()">Search</button>
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="search"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchTermChange($event)"
+        (keydown)="onSearchKeydown($event)"
+        placeholder="ค้นหาห้อง โซน หรือจุดสำคัญ"
+        aria-label="ค้นหารายการในอาคาร"
+      />
+    </span>
+    <button
+      pButton
+      type="button"
+      label="ไปยังผลแรก"
+      icon="pi pi-arrow-right"
+      class="p-button-sm p-button-secondary"
+      (click)="onSearchButton()"
+      [disabled]="!searchResults.length"
+    ></button>
   </div>
-  <small *ngIf="notFound" class="search-feedback">ไม่พบผลลัพธ์ที่ตรงกับ "{{ searchTerm }}"</small>
-  <p-tree
-    #tree
-    [value]="treeData"
-    selectionMode="single"
-    [(selection)]="selectedNode"
-    (onNodeSelect)="onNodeSelect($event)"
-    styleClass="w-full md:w-30rem">
-  </p-tree>
+
+  <div *ngIf="searchTerm && !searchResults.length" class="search-feedback">
+    ไม่พบผลลัพธ์ที่ตรงกับ "{{ searchTerm }}"
+  </div>
+
+  <div *ngIf="searchResults.length" class="search-results" role="list">
+    <button
+      type="button"
+      class="search-result"
+      role="listitem"
+      *ngFor="let result of searchResults"
+      (click)="onResultSelect(result)"
+    >
+      <span class="search-result__title">{{ result.label }}</span>
+      <span class="search-result__meta">
+        <p-tag [value]="'ชั้น ' + result.floor" severity="info"></p-tag>
+        <span class="search-result__breadcrumb">{{ result.breadcrumb }}</span>
+      </span>
+    </button>
+  </div>
+
+  <p-accordion
+    [multiple]="false"
+    [(value)]="accordionActiveValue"
+    class="tree-accordion"
+  >
+    <p-accordion-panel
+      *ngFor="let floor of floors; trackBy: trackByFloor"
+      [value]="floor.floor.toString()"
+    >
+      <p-accordion-header>
+        {{ floor.floorName }}
+      </p-accordion-header>
+      <p-accordion-content>
+        <p-tree
+          [value]="treeDataByFloor[floor.floor]"
+          selectionMode="single"
+          [(selection)]="selectedNodes[floor.floor]"
+          (onNodeSelect)="onNodeSelect($event)"
+          styleClass="tree-panel"
+        ></p-tree>
+      </p-accordion-content>
+    </p-accordion-panel>
+  </p-accordion>
 </div>

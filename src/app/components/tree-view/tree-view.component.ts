@@ -1,7 +1,11 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Tree, TreeModule } from 'primeng/tree';
+import { AccordionModule } from 'primeng/accordion';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TagModule } from 'primeng/tag';
+import { TreeModule } from 'primeng/tree';
 import { TreeNode } from 'primeng/api';
 
 interface Boundary {
@@ -26,7 +30,15 @@ interface SearchResult {
 @Component({
   selector: 'app-tree-view',
   standalone: true,
-  imports: [CommonModule, FormsModule, TreeModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    TreeModule,
+    AccordionModule,
+    ButtonModule,
+    InputTextModule,
+    TagModule
+  ],
   templateUrl: './tree-view.component.html',
   styleUrls: ['./tree-view.component.css']
 })
@@ -36,10 +48,15 @@ export class TreeViewComponent implements OnChanges {
   @Input() highlightedId: string | null = null;
   @Output() nodeSelected = new EventEmitter<any>();
 
-  treeData: TreeNode[] = [];
-  selectedNode: TreeNode | null = null;
+  floors: any[] = [];
+  accordionActiveValue = '';
+  treeDataByFloor: Record<number, TreeNode[]> = {};
+  selectedNodes: Record<number, TreeNode | null> = {};
   searchTerm = '';
-  notFound = false;
+  searchResults: SearchResult[] = [];
+
+  private nodeLookup = new Map<string, NodeLookup>();
+  private floorIndexLookup = new Map<number, number>();
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['data'] && this.data) {
@@ -62,12 +79,13 @@ export class TreeViewComponent implements OnChanges {
     if (!event?.node) {
       return;
     }
-    if (changes['highlightedId'] && this.treeData.length > 0) {
-      this.notFound = false;
-      const found = this.expandAndSelectNodeByKey(this.treeData, this.highlightedId);
-      if (!found) {
-        this.selectNode(null);
-      }
+    const floorNumber = event.node.data?.floor;
+    this.clearSelections(typeof floorNumber === 'number' ? floorNumber : undefined);
+    if (typeof floorNumber === 'number') {
+      this.selectedNodes = {
+        ...this.selectedNodes,
+        [floorNumber]: event.node
+      };
     }
     this.emitSelection(event.node);
   }
@@ -224,42 +242,22 @@ export class TreeViewComponent implements OnChanges {
     });
   }
 
-  private transformDataToTreeNodes(buildingData: any): TreeNode[] {
-    return [
-      {
-        key: buildingData.buildingId,
-        label: buildingData.buildingName,
-        expanded: true,
-        children: buildingData.floors.map((floor: any) => ({
-          key: `floor_${floor.floor}`,
-          label: floor.floorName,
-          data: { type: 'floor', floor: floor.floor },
-          expanded: true,
-          children: floor.zones.map((zone: any) => ({
-            key: zone.id,
-            label: zone.name,
-            data: { type: 'zone', floor: floor.floor, ...zone },
-            children: [
-              ...zone.areas.map((area: any) => ({
-                key: area.id,
-                label: area.name,
-                data: { type: 'area', floor: floor.floor, ...area },
-                icon: 'pi pi-map-marker'
-              })),
-              ...zone.rooms.map((room: any) => ({
-                key: room.id,
-                label: room.name,
-                data: { type: 'room', floor: floor.floor, ...room },
-                children: room.doors.map((door: any) => ({
-                  key: door.id,
-                  label: `Door: ${door.id}`,
-                  data: { type: 'door', floor: floor.floor, ...door },
-                  icon: 'pi pi-lock'
-                }))
-              }))
-            ]
-          }))
-        }))
+  private computeZoneBoundary(zone: any): Boundary | null {
+    const boundaries: Boundary[] = [];
+    (zone.areas ?? []).forEach((area: any) => area.boundary && boundaries.push(area.boundary));
+    (zone.rooms ?? []).forEach((room: any) => room.boundary && boundaries.push(room.boundary));
+    (zone.objects ?? []).forEach((obj: any) => obj.boundary && boundaries.push(obj.boundary));
+    if (!boundaries.length) {
+      return null;
+    }
+    return boundaries.reduce((acc, boundary) => ({
+      min: {
+        x: Math.min(acc.min.x, boundary.min.x),
+        y: Math.min(acc.min.y, boundary.min.y)
+      },
+      max: {
+        x: Math.max(acc.max.x, boundary.max.x),
+        y: Math.max(acc.max.y, boundary.max.y)
       }
     }));
   }
@@ -267,9 +265,6 @@ export class TreeViewComponent implements OnChanges {
   private computeCenter(boundary: Boundary | undefined): { x: number; y: number } | null {
     if (!boundary) {
       return null;
-  onNodeSelect(event: {node: TreeNode}) {
-    if (event.node && event.node.data) {
-      this.nodeSelected.emit(event.node.data);
     }
     return {
       x: (boundary.min.x + boundary.max.x) / 2,
@@ -277,46 +272,67 @@ export class TreeViewComponent implements OnChanges {
     };
   }
 
-  onSearch(): void {
-    this.notFound = false;
-    const trimmed = this.searchTerm.trim();
-    if (!trimmed) {
+  private recalculateActiveValue(): void {
+    if (!this.floors.length) {
+      this.accordionActiveValue = '';
       return;
     }
-    const match = this.findNodeByLabel(this.treeData, trimmed.toLowerCase());
-    if (match) {
-      this.selectNode(match);
-      this.expandParents(this.treeData, match);
-      this.nodeSelected.emit(match.data);
-    } else {
-      this.notFound = true;
+    const defaultFloor = this.floors[0]?.floor;
+    const targetFloor = this.activeFloor ?? defaultFloor;
+    this.accordionActiveValue = targetFloor != null ? targetFloor.toString() : '';
+  }
+
+  private applyExternalHighlight(nodeKey: string | null): void {
+    if (!nodeKey) {
+      return;
+    }
+    const lookup = this.nodeLookup.get(nodeKey);
+    if (!lookup) {
+      return;
+    }
+    this.expandAncestors(lookup);
+    this.setAccordionActiveByFloor(lookup.floor);
+    this.clearSelections(lookup.floor);
+    this.selectedNodes = {
+      ...this.selectedNodes,
+      [lookup.floor]: lookup.node
+    };
+  }
+
+  private expandAncestors(lookup: NodeLookup): void {
+    lookup.ancestors.forEach(ancestor => ancestor.expanded = true);
+    lookup.node.expanded = true;
+  }
+
+  private setAccordionActiveByFloor(floorNumber: number): void {
+    if (!this.floorIndexLookup.has(floorNumber)) {
+      return;
+    }
+    this.accordionActiveValue = floorNumber.toString();
+  }
+
+  private emitSelection(node: TreeNode): void {
+    if (node?.data) {
+      this.nodeSelected.emit(node.data);
     }
   }
 
-  onSearchKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      this.onSearch();
-    }
-  }
+  private updateSearchHighlights(): void {
+    const term = this.searchTerm.trim().toLowerCase();
+    this.searchResults = [];
 
-  private expandAndSelectNodeByKey(nodes: TreeNode[], key: string | null): boolean {
-    if (!key) {
-      this.selectNode(null);
-      return false;
-    }
-    for (const node of nodes) {
-      if (node.key === key) {
-        this.selectNode(node);
-        this.expandParents(this.treeData, node);
-        return true;
-      }
-      if (node.children) {
-        const found = this.expandAndSelectNodeByKey(node.children, key);
-        if (found) {
-          node.expanded = true;
-          return true;
-        }
+    this.nodeLookup.forEach((value, key) => {
+      const label = (value.node.label ?? '').toString();
+      const matches = term.length > 0 && label.toLowerCase().includes(term);
+      value.node.styleClass = matches ? 'tree-node__match' : undefined;
+      if (matches) {
+        this.searchResults.push({
+          nodeKey: key,
+          floor: value.floor,
+          label,
+          type: value.node.data?.type ?? 'unknown',
+          breadcrumb: this.buildBreadcrumb(value)
+        });
       }
     });
 
@@ -334,7 +350,6 @@ export class TreeViewComponent implements OnChanges {
       return;
     }
     this.focusNode(this.searchResults[0].nodeKey);
-    return false;
   }
 
   private focusNode(nodeKey: string): void {
@@ -361,28 +376,5 @@ export class TreeViewComponent implements OnChanges {
       }
     });
     this.selectedNodes = updated;
-  }
-
-  private selectNode(node: TreeNode | null): void {
-    this.selectedNode = node;
-    if (this.tree) {
-      this.tree.selection = node;
-    }
-  }
-
-  private findNodeByLabel(nodes: TreeNode[], query: string): TreeNode | null {
-    for (const node of nodes) {
-      if (node.label?.toLowerCase().includes(query)) {
-        return node;
-      }
-      if (node.children) {
-        const childMatch = this.findNodeByLabel(node.children, query);
-        if (childMatch) {
-          node.expanded = true;
-          return childMatch;
-        }
-      }
-    }
-    return null;
   }
 }
