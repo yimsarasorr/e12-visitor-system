@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'; // <--- 1. Import เข้ามา
 
 // --- เชื่อมต่อ Library ให้ถูกต้อง ---
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -80,6 +81,69 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
     ground.receiveShadow = true;
     this.scene.add(ground);
   }
+    
+  // --- 2. สร้างฟังก์ชันสำหรับรวม Geometry ของหน้าต่าง ---
+  private createMergedWindowMesh(totalFloors: number, floorHeight: number, wingDepth: number, coreWidth: number, coreDepth: number, material: THREE.Material): THREE.Mesh {
+    const windowGeometries: THREE.BufferGeometry[] = [];
+    const windowHeight = floorHeight * 0.7;
+    const windowWidth = 2.5;
+    const smallGap = 0.5;
+    const largeGap = 4.0;
+    const zOffset = 0.1;
+
+    const baseWindowGeo = new THREE.PlaneGeometry(windowWidth, windowHeight);
+
+    for (let i = 0; i < totalFloors; i++) {
+        const yPos = i * floorHeight + floorHeight / 2;
+
+        const createWindows = (startX: number, count: number, direction: number, z: number) => {
+            for (let j = 0; j < count; j++) {
+                const geo = baseWindowGeo.clone();
+                const x = startX + direction * ((windowWidth / 2) + (j * (windowWidth + smallGap)));
+                geo.translate(x, yPos, z);
+                windowGeometries.push(geo);
+            }
+        };
+
+        // -- Pattern 2-3-2 (ด้านหน้า, ปีกซ้าย) --
+        let currentX_left = -coreWidth / 2 - largeGap;
+        createWindows(currentX_left, 2, -1, wingDepth / 2 + zOffset);
+        
+        currentX_left -= (2 * windowWidth + 1 * smallGap + largeGap);
+        createWindows(currentX_left, 3, -1, wingDepth / 2 + zOffset);
+        
+        currentX_left -= (3 * windowWidth + 2 * smallGap + largeGap);
+        createWindows(currentX_left, 2, -1, wingDepth / 2 + zOffset);
+        
+        // -- Pattern 2-3-2 (ด้านหน้า, ปีกขวา) --
+        let currentX_right = coreWidth / 2 + largeGap;
+        createWindows(currentX_right, 2, 1, wingDepth / 2 + zOffset);
+        
+        currentX_right += (2 * windowWidth + 1 * smallGap + largeGap);
+        createWindows(currentX_right, 3, 1, wingDepth / 2 + zOffset);
+        
+        currentX_right += (3 * windowWidth + 2 * smallGap + largeGap);
+        createWindows(currentX_right, 2, 1, wingDepth / 2 + zOffset);
+
+        // -- Pattern Lobby 3 (ด้านหน้า) --
+        const lobbyStartX = -(windowWidth + smallGap);
+        for (let j = 0; j < 3; j++) {
+            const geo = baseWindowGeo.clone();
+            const x = lobbyStartX + (j * (windowWidth + smallGap));
+            geo.translate(x, yPos, coreDepth / 2 + zOffset);
+            windowGeometries.push(geo);
+        }
+    }
+
+    baseWindowGeo.dispose(); // คืน Memory
+
+    if (windowGeometries.length === 0) {
+        return new THREE.Mesh(); // Return empty mesh if no windows
+    }
+
+    const mergedGeometry = BufferGeometryUtils.mergeGeometries(windowGeometries);
+    return new THREE.Mesh(mergedGeometry, material);
+  }
 
   private createBuildingModel(): void {
     const textureLoader = new THREE.TextureLoader();
@@ -95,11 +159,6 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
     const wingDepth = 18;
     const coreWidth = 14;
     const coreDepth = 20;
-
-    const windowHeight = floorHeight * 0.7;
-    const windowWidth = 2.5;
-    const smallGap = 0.5;
-    const largeGap = 4.0;
 
     // --- สร้างโครงสร้างหลักของตึก (ไม่รวมหน้าต่าง) ---
     const buildingStructureGroup = new THREE.Group();
@@ -121,62 +180,11 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
     buildingStructureGroup.add(rooftopStructure);
 
     this.scene.add(buildingStructureGroup);
-
-    // --- สร้างหน้าต่างทีละบาน และ Add เข้า Scene โดยตรง ---
-    const windowGeo = new THREE.PlaneGeometry(windowWidth, windowHeight);
-    const zOffset = 0.1;
-
-    for (let i = 0; i < totalFloors; i++) {
-      const yPos = i * floorHeight + floorHeight / 2;
-
-      // -- Pattern 2-3-2 (ด้านหน้า) --
-      let currentX_left = -coreWidth / 2 - largeGap;
-      for (let j = 0; j < 2; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-      currentX_left -= (2 * windowWidth + 1 * smallGap + largeGap);
-      for (let j = 0; j < 3; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-      currentX_left -= (3 * windowWidth + 2 * smallGap + largeGap);
-      for (let j = 0; j < 2; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_left - (windowWidth / 2) - (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-
-      let currentX_right = coreWidth / 2 + largeGap;
-      for (let j = 0; j < 2; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-      currentX_right += (2 * windowWidth + 1 * smallGap + largeGap);
-      for (let j = 0; j < 3; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-      currentX_right += (3 * windowWidth + 2 * smallGap + largeGap);
-      for (let j = 0; j < 2; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(currentX_right + (windowWidth / 2) + (j * (windowWidth + smallGap)), yPos, wingDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-
-      // -- Pattern Lobby 3 (ด้านหน้า) --
-      const lobbyStartX = -(windowWidth + smallGap);
-      for (let j = 0; j < 3; j++) {
-        const windowMesh = new THREE.Mesh(windowGeo, windowMaterial);
-        windowMesh.position.set(lobbyStartX + (j * (windowWidth + smallGap)), yPos, coreDepth / 2 + zOffset);
-        this.scene.add(windowMesh); // <--- แก้ไข: Add to scene
-      }
-    }
-
+    
+    // --- 3. เรียกใช้ฟังก์ชันใหม่เพื่อสร้างหน้าต่างทั้งหมดใน Mesh เดียว ---
+    const allWindowsMesh = this.createMergedWindowMesh(totalFloors, floorHeight, wingDepth, coreWidth, coreDepth, windowMaterial);
+    this.scene.add(allWindowsMesh);
+    
     // --- สร้างกล่องใสสำหรับคลิก (เหมือนเดิม) ---
     const clickBoxWidth = wingWidth * 2 + coreWidth;
     for (let i = 1; i <= totalFloors; i++) {

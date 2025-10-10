@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter, Input, OnChanges, SimpleChanges, NgZone } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ButtonModule } from 'primeng/button';
@@ -67,7 +67,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private cameraLookAtTarget = new THREE.Vector3();
   private isInitialized = false;
 
-  constructor(private decimalPipe: DecimalPipe) {}
+  constructor(
+    private decimalPipe: DecimalPipe,
+    private ngZone: NgZone
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (this.isInitialized && changes['floorData'] && this.floorData) {
@@ -78,7 +81,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
       if (selection) {
         this.focusOnExternalSelection(selection);
       } else {
-        this.closeDetail();
+        this.ngZone.run(() => this.closeDetail());
       }
     }
   }
@@ -94,18 +97,16 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     this.updateDoorMaterials();
   }
 
-  // --- START: ฟังก์ชันที่ตกหล่นไป (เพิ่มกลับเข้ามาทั้งหมด) ---
-
-  toggleView(): void {
+  public toggleView(): void {
     this.currentView = this.currentView === 'iso' ? 'top' : 'iso';
   }
 
-  toggleFullscreen(): void {
+  public toggleFullscreen(): void {
     this.isFullscreen = !this.isFullscreen;
     setTimeout(() => this.onWindowResize(), 50);
   }
 
-  getTypeLabel(type: string): string {
+  public getTypeLabel(type: string): string {
     return this.typeLabelMap[type] ?? type;
   }
 
@@ -134,8 +135,6 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private get canvas(): HTMLCanvasElement {
     return this.canvasRef.nativeElement;
   }
-  
-  // --- END: ฟังก์ชันที่ตกหล่นไป ---
 
   private panCameraToObject(targetData: any): void {
     if (!targetData) return;
@@ -148,8 +147,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
         targetPosition.z = targetData.center.y;
     }
     this.cameraLookAtTarget.copy(targetPosition);
-    this.camera.zoom = 1.5;
-    this.camera.updateProjectionMatrix();
+    // this.camera.zoom = 1.5;
+    // this.camera.updateProjectionMatrix();
   }
   
   public simulateAuthentication(level: number): void {
@@ -342,7 +341,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
 
     if (this.currentZoneId !== newZoneId) {
         this.currentZoneId = newZoneId;
-        this.zoneChanged.emit(this.currentZoneId);
+        this.ngZone.run(() => {
+            this.zoneChanged.emit(this.currentZoneId);
+        });
     }
   }
   
@@ -428,7 +429,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
       const clickedObj = intersects[0].object;
       const payload = clickedObj.userData as { type: string, data: any };
       if (payload?.type && payload.data) {
-        this.openDetail(payload.type, payload.data);
+        this.ngZone.run(() => {
+          this.openDetail(payload.type, payload.data);
+        });
       }
     }
   }
@@ -462,24 +465,32 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
   
   private startRenderingLoop(): void {
-    const render = () => {
-      requestAnimationFrame(render);
-      
-      this.onWindowResize(); // Call resize logic every frame
+    this.ngZone.runOutsideAngular(() => {
+      const render = () => {
+        requestAnimationFrame(render);
+        
+        this.onWindowResize();
 
-      this.updatePlayer();
-      this.checkPlayerZone();
-      this.updateCameraPosition();
-      
-      const pos = this.player.position;
-      const x = this.decimalPipe.transform(pos.x, '1.1-1');
-      const z = this.decimalPipe.transform(pos.z, '1.1-1');
-      this.playerPositionDisplay = `X: ${x}, Z: ${z}`;
-      
-      this.controls.update();
-      this.renderer.render(this.scene, this.camera);
-    };
-    render();
+        this.updatePlayer();
+        this.checkPlayerZone();
+        this.updateCameraPosition();
+        
+        const pos = this.player.position;
+        const x = this.decimalPipe.transform(pos.x, '1.1-1');
+        const z = this.decimalPipe.transform(pos.z, '1.1-1');
+        const newPositionDisplay = `X: ${x}, Z: ${z}`;
+        
+        if (this.playerPositionDisplay !== newPositionDisplay) {
+            this.ngZone.run(() => {
+                this.playerPositionDisplay = newPositionDisplay;
+            });
+        }
+        
+        this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+      };
+      render();
+    });
   }
 
   @HostListener('window:pointerup')
@@ -492,7 +503,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
 
   @HostListener('window:resize')
   onWindowResize(event?: Event) {
-    if (!this.renderer || !this.camera) return; // Guard clause
+    if (!this.renderer || !this.camera) return;
 
     const canvas = this.renderer.domElement;
     if (canvas.clientHeight > 0) {
@@ -510,10 +521,12 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
 
   private reloadFloorPlan(): void {
-    this.currentZoneId = null;
-    this.zoneChanged.emit(null);
-    this.closeDetail();
-    this.playerPositionDisplay = '';
+    this.ngZone.run(() => {
+        this.currentZoneId = null;
+        this.zoneChanged.emit(null);
+        this.closeDetail();
+        this.playerPositionDisplay = '';
+    });
     this.loadFloorPlan();
     if (this.player) {
       this.player.position.set(0, this.playerSize, 0);
@@ -562,8 +575,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     if (!this.camera) {
       return;
     }
-    this.camera.zoom = 1.0;
-    this.camera.updateProjectionMatrix();
+    // this.camera.zoom = 1.0;
+    // this.camera.updateProjectionMatrix();
     if (this.player) {
       this.cameraLookAtTarget.copy(this.player.position);
     }
