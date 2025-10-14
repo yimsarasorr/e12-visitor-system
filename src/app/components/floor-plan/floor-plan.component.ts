@@ -74,15 +74,16 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-  if (this.isInitialized && changes['floorData'] && this.floorData) {
-    this.reloadFloorPlan();
-  }
-  if (this.isInitialized && changes['panToTarget']) {
-    const selection = changes['panToTarget'].currentValue;
-    if (selection) {
-      this.warpPlayerTo(selection)
-      this.panCameraToObject(selection);
-      this.ngZone.run(() => this.closeDetail());
+    if (this.isInitialized && changes['floorData'] && this.floorData) {
+      this.applyFloorColor();
+      this.reloadFloorPlan();
+    }
+    if (this.isInitialized && changes['panToTarget']) {
+      const selection = changes['panToTarget'].currentValue;
+      if (selection) {
+        this.warpPlayerTo(selection);
+        this.panCameraToObject(selection);
+        this.ngZone.run(() => this.closeDetail());
       }
     }
   }
@@ -92,6 +93,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     this.isInitialized = true;
     
     this.createScene();
+    this.applyFloorColor();
     this.loadFloorPlan();
     this.createPlayer();
     this.startRenderingLoop();
@@ -562,8 +564,19 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     }
     this.updateDoorMaterials();
 
-    if (this.coloredGroundPlane && this.floorData?.color) {
-      (this.coloredGroundPlane.material as THREE.MeshStandardMaterial).color.set(this.floorData.color);
+    this.applyFloorColor();
+  }
+
+  private applyFloorColor(): void {
+    if (!this.coloredGroundPlane) {
+      return;
+    }
+
+    const material = this.coloredGroundPlane.material as THREE.MeshStandardMaterial;
+    if (this.floorData?.color) {
+      material.color.set(this.floorData.color);
+    } else {
+      material.color.set(0xeeeeee);
     }
   }
 
