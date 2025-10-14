@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FloorPlanComponent } from "./components/floor-plan/floor-plan.component";
 import { TreeViewComponent } from './components/tree-view/tree-view.component';
@@ -19,13 +19,14 @@ export class App {
   highlightedId: string | null = null;
   selectedNodeData: any = null;
   selectedFloorIndex: number | null = null;
+  public lastActiveFloor: number | null = null;
   private readonly totalFloors = 12;
   private readonly floorPalette = [
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
 
-  constructor() {
+  constructor(private cdr: ChangeDetectorRef) {
     this.initialiseFloors();
   }
 
@@ -41,11 +42,22 @@ export class App {
   }
 
   onFloorSelected(floorNumber: number): void {
-    const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
-    if (index === -1) return;
+  const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
+  if (index === -1) return;
+
+  // 1. อัปเดต state เพื่อบอก building-view ให้ไฮไลท์
+  this.lastActiveFloor = floorNumber;
+
+  // 2. บังคับให้ Angular อัปเดตหน้าจอทันทีเพื่อแสดงไฮไลท์
+  this.cdr.detectChanges(); 
+
+  // 3. หลังจากหน้าจออัปเดตแล้ว ค่อยหน่วงเวลาเพื่อเปลี่ยนหน้า
+  setTimeout(() => {
     this.selectedFloorIndex = index;
     this.highlightedId = null;
     this.selectedNodeData = null;
+    this.cdr.detectChanges(); 
+    }, 50); 
   }
 
   resetToBuildingOverview(): void {

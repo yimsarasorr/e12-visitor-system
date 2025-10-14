@@ -230,8 +230,8 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
       const clickedFloor = intersects[0].object;
       const floorNumber = clickedFloor.userData['floor'];
       this.floorSelected.emit(floorNumber);
-      this.activeFloor = floorNumber;
-      this.updateFloorHighlights();
+      // this.activeFloor = floorNumber;
+      // this.updateFloorHighlights();
     }
   }
 

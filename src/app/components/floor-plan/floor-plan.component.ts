@@ -41,6 +41,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   private floorMeshes: THREE.Mesh[] = [];
   private doorMeshes: THREE.Mesh[] = [];
   private floorGroup: THREE.Group | null = null;
+  private coloredGroundPlane!: THREE.Mesh;
 
   private lockedDoorMaterial!: THREE.MeshStandardMaterial;
   private unlockedDoorMaterial!: THREE.MeshStandardMaterial;
@@ -73,15 +74,15 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (this.isInitialized && changes['floorData'] && this.floorData) {
-      this.reloadFloorPlan();
-    }
-    if (this.isInitialized && changes['panToTarget']) {
-      const selection = changes['panToTarget'].currentValue;
-      if (selection) {
-        this.focusOnExternalSelection(selection);
-      } else {
-        this.ngZone.run(() => this.closeDetail());
+  if (this.isInitialized && changes['floorData'] && this.floorData) {
+    this.reloadFloorPlan();
+  }
+  if (this.isInitialized && changes['panToTarget']) {
+    const selection = changes['panToTarget'].currentValue;
+    if (selection) {
+      this.warpPlayerTo(selection)
+      this.panCameraToObject(selection);
+      this.ngZone.run(() => this.closeDetail());
       }
     }
   }
@@ -137,20 +138,36 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
   }
 
   private panCameraToObject(targetData: any): void {
-    if (!targetData) return;
-    let targetPosition = new THREE.Vector3();
-    if (targetData.boundary) {
-        targetPosition.x = (targetData.boundary.min.x + targetData.boundary.max.x) / 2;
-        targetPosition.z = (targetData.boundary.min.y + targetData.boundary.max.y) / 2;
-    } else if (targetData.center) {
-        targetPosition.x = targetData.center.x;
-        targetPosition.z = targetData.center.y;
+  if (!targetData) return;
+  let targetPosition = new THREE.Vector3();
+  if (targetData.center) {
+      targetPosition.x = targetData.center.x;
+      targetPosition.z = targetData.center.y;
+    } else if (targetData.boundary) {
+      targetPosition.x = (targetData.boundary.min.x + targetData.boundary.max.x) / 2;
+      targetPosition.z = (targetData.boundary.min.y + targetData.boundary.max.y) / 2;
     }
-    this.cameraLookAtTarget.copy(targetPosition);
-    // this.camera.zoom = 1.5;
-    // this.camera.updateProjectionMatrix();
+  this.cameraLookAtTarget.copy(targetPosition);
   }
   
+  private warpPlayerTo(targetData: any): void {
+    if (!this.player || !targetData?.center) {
+      return;
+    }
+
+    const newPosition = new THREE.Vector3(
+      targetData.center.x,
+      this.playerSize,
+      targetData.center.y 
+    );
+
+    // ย้ายตำแหน่งตัวละครไปยังพิกัดใหม่
+    this.player.position.copy(newPosition);
+
+    // ทำให้กล้องตามตัวละครไปทันที
+    this.cameraLookAtTarget.copy(this.player.position);
+  }
+
   public simulateAuthentication(level: number): void {
     this.currentUserAccessLevel = level;
     this.updateDoorMaterials();
@@ -360,6 +377,17 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
     this.controls.target.set(0, 0, -6);
     this.lockedDoorMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, transparent: true, opacity: 0.3 });
     this.unlockedDoorMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.3 });
+
+    const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0xeeeeee, // สีเริ่มต้น
+    side: THREE.DoubleSide,
+  });
+  this.coloredGroundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+  this.coloredGroundPlane.rotation.x = -Math.PI / 2;
+  this.coloredGroundPlane.position.y = -0.01;
+  this.coloredGroundPlane.renderOrder = -1;
+  this.scene.add(this.coloredGroundPlane);
   }
 
   private createPlayer(): void {
@@ -533,6 +561,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges {
       this.cameraLookAtTarget.copy(this.player.position);
     }
     this.updateDoorMaterials();
+
+    if (this.coloredGroundPlane && this.floorData?.color) {
+      (this.coloredGroundPlane.material as THREE.MeshStandardMaterial).color.set(this.floorData.color);
+    }
   }
 
   private disposeFloorGroup(): void {

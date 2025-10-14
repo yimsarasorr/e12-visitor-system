@@ -14,7 +14,7 @@
         <div class="selection-canvas">
           <app-building-view
             [floors]="buildingData.floors"
-            (floorSelected)="onFloorSelected($event)">
+            [activeFloor]="lastActiveFloor" (floorSelected)="onFloorSelected($event)">
           </app-building-view>
         </div>
       </div>
