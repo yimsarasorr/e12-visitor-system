@@ -6,11 +6,20 @@ import { ButtonModule } from 'primeng/button';
 import { SplitterModule } from 'primeng/splitter';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
 import floorData from './components/floor-plan/e12-floor1.json';
+import { DrawerModule } from 'primeng/drawer'; // 1. Import DrawerModule
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ CommonModule, FloorPlanComponent, TreeViewComponent, BuildingViewComponent, ButtonModule, SplitterModule ],
+  imports: [ 
+    CommonModule, 
+    FloorPlanComponent, 
+    TreeViewComponent, 
+    BuildingViewComponent, 
+    ButtonModule, 
+    SplitterModule,
+    DrawerModule // 2. เพิ่ม DrawerModule
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
@@ -25,6 +34,7 @@ export class App {
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
+  public isDrawerVisible = false; // 3. เพิ่ม State สำหรับ Drawer
 
   constructor(private cdr: ChangeDetectorRef) {
     this.initialiseFloors();
@@ -150,5 +160,10 @@ export class App {
       start: { x: wall.start.x, y: wall.start.y },
       end: { x: wall.end.x, y: wall.end.y }
     }));
+  }
+
+  // 4. เพิ่มฟังก์ชันสำหรับเปิด Drawer
+  onMenuToggle(): void {
+    this.isDrawerVisible = true;
   }
 }

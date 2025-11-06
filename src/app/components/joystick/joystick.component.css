@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  position: absolute;
+  bottom: 40px; /* ระยะห่างจากขอบล่าง */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  
+  /* ซ่อนบน Desktop (จอที่ใหญ่กว่า 1024px) */
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+.joystick-base {
+  width: 150px;
+  height: 150px;
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.joystick-stick {
+  width: 70px;
+  height: 70px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  position: absolute;
+  cursor: grab;
+  user-select: none; /* ป้องกันการ select text ตอนลาก */
+  touch-action: none; /* ป้องกันการ scroll หน้าจอตอนลาก */
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.joystick-stick:active {
+  background-color: rgba(255, 255, 255, 0.9);
+  cursor: grabbing;
+}

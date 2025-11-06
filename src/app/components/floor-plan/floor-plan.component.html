@@ -1,29 +1,30 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
 
   <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
+    <p-button 
+      icon="pi pi-bars" 
+      (click)="onMenuToggleClick()" 
+      styleClass="p-button-secondary p-button-sm menu-toggle-button">
+    </p-button>
+
     <div class="floor-indicator" *ngIf="floorData">
-      <span class="floor-indicator__number">{{ floorData.floor }}</span>
-      <div class="floor-indicator__label">
-        <span class="floor-indicator__title">{{ floorData.floorName }}</span>
-        <span class="floor-indicator__subtitle">E12 Engineering Hub</span>
       </div>
-    </div>
 
     <div class="access-terminal">
       <span class="terminal-title">Face Access</span>
       <div class="terminal-buttons">
         <p-button
-          (click)="simulateAuthentication(-1)"
+          (click)="interaction.simulateAuthentication(-1)"
           label="-1"
           styleClass="p-button-sm p-button-danger"
         ></p-button>
         <p-button
-          (click)="simulateAuthentication(0)"
+          (click)="interaction.simulateAuthentication(0)"
           label="0"
           styleClass="p-button-sm p-button-secondary"
         ></p-button>
         <p-button
-          (click)="simulateAuthentication(1)"
+          (click)="interaction.simulateAuthentication(1)"
           label="1"
           styleClass="p-button-sm p-button-success"
         ></p-button>
@@ -31,55 +32,32 @@
     </div>
 
     <div class="view-toggle-container">
-      <p-button
-        (click)="toggleView()"
-        [label]="currentView === 'iso' ? 'Top View' : 'ISO View'"
-        styleClass="p-button-sm p-button-secondary"
-      ></p-button>
-      <p-button
-        (click)="toggleFullscreen()"
-        [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-        [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
-        styleClass="p-button-sm"
-      ></p-button>
-    </div>
+      </div>
   </div>
 
   <canvas #canvas></canvas>
 
   <div class="info-display-container">
-    <div *ngIf="currentZoneId" class="zone-display">
-      Zone: <strong>{{ currentZoneId }}</strong>
+    <div *ngIf="interaction.currentZoneId$ | async as zoneId" class="zone-display">
+      Zone: <strong>{{ zoneId }}</strong>
     </div>
-    <div *ngIf="playerPositionDisplay" class="zone-display">
-      Coords: <strong>{{ playerPositionDisplay }}</strong>
+    <div *ngIf="playerPositionDisplay$ | async as posDisplay" class="zone-display">
+      Coords: <strong>{{ posDisplay }}</strong>
     </div>
   </div>
 
-  <div
-    class="mobile-controls"
-    (pointerdown)="disableOrbitControls($event)"
-    (pointerup)="enableOrbitControls($event)"
-  >
-    <button class="control-btn up" (touchstart)="move($event, 'ArrowUp', true)" (touchend)="move($event, 'ArrowUp', false)">▲</button>
-    <div class="horizontal-controls">
-      <button class="control-btn left" (touchstart)="move($event, 'ArrowLeft', true)" (touchend)="move($event, 'ArrowLeft', false)">◄</button>
-      <button class="control-btn down" (touchstart)="move($event, 'ArrowDown', true)" (touchend)="move($event, 'ArrowDown', false)">▼</button>
-      <button class="control-btn right" (touchstart)="move($event, 'ArrowRight', true)" (touchend)="move($event, 'ArrowRight', false)">►</button>
-    </div>
   </div>
-</div>
 
 <p-dialog
   header="Details"
-  [(visible)]="isDetailDialogVisible"
-  (onHide)="onDialogHide()"
+  [visible]="(interaction.isDetailDialogVisible$ | async) ?? false"
+  (onHide)="interaction.closeDetail()" 
   [modal]="true"
   [style]="{ width: '50vw', 'max-width': '520px' }"
   [draggable]="false"
   [resizable]="false"
 >
-  <div *ngIf="selectedObject as selected" class="detail-content" (click)="$event.stopPropagation()">
+  <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
     <div class="detail-header">
       <div>
         <h3>{{ selected.data?.name || selected.data?.id }}</h3>
@@ -90,67 +68,21 @@
     </div>
 
     <ng-container [ngSwitch]="selected.type">
-      <ng-container *ngSwitchCase="'zone'">
-        <p class="detail-description">
-          พื้นที่โซนนี้มี {{ selected.data?.areas?.length || 0 }} พื้นที่ย่อย และ {{ selected.data?.rooms?.length || 0 }} ห้องหลัก
-        </p>
-        <div *ngIf="selected.data?.boundary" class="detail-section">
-          <h4>Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'area'">
-        <div class="detail-section">
-          <h4>Area Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'room'">
-        <div class="detail-section">
-          <h4>Room Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-        <div class="detail-section" *ngIf="selected.data?.doors?.length">
-          <h4>Doors</h4>
-          <ul>
-            <li *ngFor="let door of selected.data.doors">
-              {{ door.id }} — Access Level: {{ door.accessLevel }}
-            </li>
-          </ul>
-        </div>
-      </ng-container>
-
       <ng-container *ngSwitchCase="'door'">
         <div class="detail-section">
           <h4>Door Access</h4>
           <p><strong>Required Level:</strong> {{ selected.data.accessLevel }}</p>
-          <p><strong>Your Level:</strong> {{ currentUserAccessLevel }}</p>
+          <p><strong>Your Level:</strong> {{ interaction.currentUserAccessLevel$ | async }}</p>
           <p><strong>Status:</strong>
-            <span [ngClass]="currentUserAccessLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
-              {{ currentUserAccessLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
-            </span>
+            <ng-container *ngIf="interaction.currentUserAccessLevel$ | async as currentLevel">
+              <span [ngClass]="currentLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
+                {{ currentLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
+              </span>
+            </ng-container>
           </p>
         </div>
       </ng-container>
 
-      <ng-container *ngSwitchCase="'object'">
-        <div class="detail-section">
-          <h4>Asset Details</h4>
-          <p><strong>Type:</strong> {{ selected.data.type }}</p>
-          <p *ngIf="selected.data?.boundary"><strong>Coverage:</strong> {{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }} → {{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }}</p>
-        </div>
       </ng-container>
-    </ng-container>
   </div>
 </p-dialog>

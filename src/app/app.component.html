@@ -21,46 +21,47 @@
     </ng-container>
 
     <ng-template #floorWorkspace>
-      <p-splitter [style]="{'height': '100%'}" [panelSizes]="[32, 68]">
-        <ng-template pTemplate>
-          <div class="panel panel-left">
-            <div class="panel-section">
-              <div class="panel-section__header">
-                <div>
-                  <h3>{{ buildingData.buildingName }}</h3>
-                  <p class="panel-section__subtitle">ชั้น {{ selectedFloor?.floor }}</p>
-                </div>
-                <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
+      <p-drawer 
+        [(visible)]="isDrawerVisible" 
+        position="left" 
+        styleClass="floor-drawer"
+      >
+        <div class="panel panel-left">
+          <div class="panel-section">
+            <div class="panel-section__header">
+              <div>
+                <h3>{{ buildingData.buildingName }}</h3>
+                <p class="panel-section__subtitle">ชั้น {{ selectedFloor?.floor }}</p>
               </div>
-              <div class="mini-building">
-                <app-building-view
-                  [floors]="buildingData.floors"
-                  [activeFloor]="selectedFloor?.floor ?? null"
-                  (floorSelected)="onFloorSelected($event)">
-                </app-building-view>
-              </div>
+              <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
             </div>
-            <div class="panel-section tree-section">
-              <h3>Zone Directory</h3>
-              <app-tree-view
-                [data]="buildingData"
+            <div class="mini-building">
+              <app-building-view
+                [floors]="buildingData.floors"
                 [activeFloor]="selectedFloor?.floor ?? null"
-                [highlightedId]="highlightedId"
-                (nodeSelected)="onTreeNodeSelected($event)">
-              </app-tree-view>
+                (floorSelected)="onFloorSelected($event)">
+              </app-building-view>
             </div>
           </div>
-        </ng-template>
-        <ng-template pTemplate>
-          <div class="panel panel-right">
-            <app-floor-plan
-              [floorData]="selectedFloor"
-              [panToTarget]="selectedNodeData"
-              (zoneChanged)="onZoneChanged($event)">
-            </app-floor-plan>
+          <div class="panel-section tree-section">
+            <h3>Zone Directory</h3>
+            <app-tree-view
+              [data]="buildingData"
+              [activeFloor]="selectedFloor?.floor ?? null"
+              [highlightedId]="highlightedId"
+              (nodeSelected)="onTreeNodeSelected($event)">
+            </app-tree-view>
           </div>
-        </ng-template>
-      </p-splitter>
+        </div>
+      </p-drawer>
+
+      <div class="panel panel-right floor-plan-content">
+        <app-floor-plan
+          [floorData]="selectedFloor"
+          [panToTarget]="selectedNodeData"
+          (zoneChanged)="onZoneChanged($event)"
+          (menuToggle)="onMenuToggle()"> </app-floor-plan>
+      </div>
     </ng-template>
   </main>
 </div>
