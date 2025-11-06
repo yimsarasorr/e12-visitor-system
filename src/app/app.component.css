@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 0;
 }
 .main-header {
   background-color: #005A9C;
@@ -23,6 +24,7 @@
   overflow: auto;
   position: relative;
   display: flex;
+  min-height: 0;
 }
 .main-content ::ng-deep .p-splitter {
   display: none;
@@ -36,6 +38,7 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 .panel-right {
   padding: 0;
@@ -159,6 +162,13 @@
   padding: 0;
   width: 100%;
   transition: margin-left 0.3s ease;
+  min-height: 0;
+}
+
+.floor-plan-content app-floor-plan {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 /* 6. Style สำหรับ Mobile */

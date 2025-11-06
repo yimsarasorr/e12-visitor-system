@@ -1,4 +1,7 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
+  <div class="floor-plan-stage">
+    <canvas #canvas></canvas>
+  </div>
 
   <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
     <p-button
@@ -40,8 +43,6 @@
     <div class="view-toggle-container">
       </div>
   </div>
-
-  <canvas #canvas></canvas>
 
   <div class="info-display-container">
     <div *ngIf="interaction.currentZoneId$ | async as zoneId" class="zone-display">

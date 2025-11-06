@@ -51,6 +51,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   
   private decimalPipe = inject(DecimalPipe);
   private ngZone = inject(NgZone);
+  private resizeObserver?: ResizeObserver;
 
   // 6. Properties ที่เหลือ
   private floorGroup: THREE.Group | null = null;
@@ -108,23 +109,34 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.threeScene.initialize(this.canvasRef.nativeElement);
     this.playerControls.initialize();
     this.interaction.initialize(this.floorData);
-    
+
     this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
     this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
     this.threeScene.scene.add(this.floorGroup);
-    
+
     this.cameraLookAtTarget.copy(this.playerControls.player.position);
     this.startRenderingLoop();
     setTimeout(() => {
       this.threeScene.resize();
     }, 0);
+
+    if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
+      this.ngZone.runOutsideAngular(() => {
+        this.resizeObserver = new ResizeObserver(() => this.threeScene.resize());
+        const hostElement = this.canvasRef.nativeElement?.parentElement as Element | null;
+        if (hostElement) {
+          this.resizeObserver.observe(hostElement);
+        }
+      });
+    }
   }
-  
+
   ngOnDestroy(): void {
     this.isInitialized = false;
     this.threeScene.destroy();
     this.floorBuilder.clearFloor();
     this.subscriptions.unsubscribe();
+    this.resizeObserver?.disconnect();
   }
 
   private startRenderingLoop(): void {
