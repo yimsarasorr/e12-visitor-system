@@ -20,7 +20,7 @@
 }
 .main-content {
   flex-grow: 1;
-  overflow: hidden;
+  overflow: auto;
   position: relative;
   display: flex;
 }
@@ -60,6 +60,7 @@
   padding: 2.5rem 3rem;
   background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 55%),
               radial-gradient(circle at bottom right, rgba(14,165,233,0.15), transparent 55%);
+  box-sizing: border-box;
 }
 
 .selection-copy h2 {
@@ -156,8 +157,7 @@
   height: 100%;
   overflow: hidden;
   padding: 0;
-  margin-left: 380px;
-  width: calc(100% - 380px);
+  width: 100%;
   transition: margin-left 0.3s ease;
 }
 
@@ -168,15 +168,30 @@
     max-width: 380px;
   }
 
-  .floor-plan-content {
-    margin-left: 0;
-    width: 100%;
-  }
-
   :host ::ng-deep .floor-drawer .p-drawer-mask {
     z-index: 1001;
   }
   :host ::ng-deep .floor-drawer {
     z-index: 1002;
+  }
+}
+
+@media (max-width: 768px) {
+  .building-selection {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    text-align: center;
+    padding: 1.75rem 1.25rem;
+    gap: 1.5rem;
+  }
+
+  .selection-copy {
+    max-width: 420px;
+  }
+
+  .selection-canvas {
+    min-height: 360px;
+    width: 100%;
   }
 }

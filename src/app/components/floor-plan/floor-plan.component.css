@@ -282,16 +282,5 @@ canvas {
 }
 
 .menu-toggle-button {
-  /* ซ่อนปุ่มนี้บนจอ Desktop (จอ > 960px) */
-  display: none;
-}
-
-@media (max-width: 960px) {
-  /* ...existing code... */
-
-  .menu-toggle-button {
-    /* แสดงปุ่มบนมือถือ */
-    display: block;
-    margin-right: 1rem;
-  }
+  margin-right: 1rem;
 }

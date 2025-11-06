@@ -74,6 +74,7 @@ export class App {
     this.selectedFloorIndex = null;
     this.selectedNodeData = null;
     this.highlightedId = null;
+    this.isDrawerVisible = false;
   }
 
   get selectedFloor(): any | null {
@@ -164,6 +165,6 @@ export class App {
 
   // 4. เพิ่มฟังก์ชันสำหรับเปิด Drawer
   onMenuToggle(): void {
-    this.isDrawerVisible = true;
+    this.isDrawerVisible = !this.isDrawerVisible;
   }
 }
