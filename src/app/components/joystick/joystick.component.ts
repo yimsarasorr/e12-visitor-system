@@ -11,15 +11,22 @@ import { PlayerControlsService } from '../../services/floorplan/player-controls.
   styleUrls: ['./joystick.component.css']
 })
 export class JoystickComponent {
+  @ViewChild('base') private baseRef!: ElementRef<HTMLDivElement>;
   @ViewChild('stick') private stickRef!: ElementRef<HTMLDivElement>;
-  
+
   private playerControls = inject(PlayerControlsService);
   private ngZone = inject(NgZone);
 
-  private baseRadius: number = 75; // 150 / 2
-  private stickRadius: number = 35; // 70 / 2
-  private maxMove: number = this.baseRadius - this.stickRadius - 5; // 5 คือ padding
+  private activePointerId: number | null = null;
+  private baseRadius = 0;
+  private stickRadius = 0;
+  private maxMove = 0;
+  private readonly stickPadding = 6;
   private isDragging = false;
+
+  private get baseEl(): HTMLDivElement {
+    return this.baseRef.nativeElement;
+  }
 
   private get stickEl(): HTMLDivElement {
     return this.stickRef.nativeElement;
@@ -29,8 +36,17 @@ export class JoystickComponent {
   onPointerDown(event: PointerEvent): void {
     // ป้องกันพฤติกรรมเริ่มต้น (เช่น การลากรูป)
     event.preventDefault();
-    this.stickEl.setPointerCapture(event.pointerId); // ล็อค pointer
+    event.stopPropagation();
     this.isDragging = true;
+    this.activePointerId = event.pointerId;
+
+    this.recalculateBounds();
+
+    try {
+      this.baseEl.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore capture errors (บาง Browser อาจไม่รองรับ)
+    }
 
     // รันนอก Angular Zone เพื่อ performance ที่ดีขึ้น
     this.ngZone.runOutsideAngular(() => {
@@ -41,7 +57,7 @@ export class JoystickComponent {
   // --- 2. เมื่อลาก (จะถูกจับโดย HostListener) ---
   @HostListener('window:pointermove', ['$event'])
   onPointerMove(event: PointerEvent): void {
-    if (!this.isDragging) return;
+    if (!this.isDragging || event.pointerId !== this.activePointerId) return;
 
     this.ngZone.runOutsideAngular(() => {
       this.updateStickPosition(event.clientX, event.clientY);
@@ -51,32 +67,41 @@ export class JoystickComponent {
   // --- 3. เมื่อปล่อย (จะถูกจับโดย HostListener) ---
   @HostListener('window:pointerup', ['$event'])
   onPointerUp(event: PointerEvent): void {
-    if (!this.isDragging) return;
+    if (!this.isDragging || event.pointerId !== this.activePointerId) return;
 
     this.isDragging = false;
-    this.stickEl.releasePointerCapture(event.pointerId); // ปล่อย pointer
+    this.releasePointerCapture(event.pointerId);
+    this.resetStick();
+  }
 
-    // รีเซ็ตตำแหน่ง
-    this.stickEl.style.transform = `translate(0px, 0px)`;
-    
-    // บอก Service ให้หยุดเดิน
-    this.playerControls.setJoystickInput(0, 0);
+  @HostListener('window:pointercancel', ['$event'])
+  onPointerCancel(event: PointerEvent): void {
+    if (!this.isDragging || event.pointerId !== this.activePointerId) return;
+
+    this.isDragging = false;
+    this.releasePointerCapture(event.pointerId);
+    this.resetStick();
   }
 
   private updateStickPosition(clientX: number, clientY: number): void {
-    const baseRect = this.stickEl.parentElement!.getBoundingClientRect();
-    const baseCenterX = baseRect.left + this.baseRadius;
-    const baseCenterY = baseRect.top + this.baseRadius;
+    const baseRect = this.baseEl.getBoundingClientRect();
+    const baseCenterX = baseRect.left + baseRect.width / 2;
+    const baseCenterY = baseRect.top + baseRect.height / 2;
 
     let deltaX = clientX - baseCenterX;
     let deltaY = clientY - baseCenterY;
 
     // จำกัดระยะการลากให้อยู่ในวงกลม
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const maxMove = this.maxMove || Math.max(0, baseRect.width / 2 - this.stickEl.offsetWidth / 2 - this.stickPadding);
 
-    if (distance > this.maxMove) {
-      deltaX = (deltaX / distance) * this.maxMove;
-      deltaY = (deltaY / distance) * this.maxMove;
+    if (maxMove <= 0) {
+      return;
+    }
+
+    if (distance > maxMove) {
+      deltaX = (deltaX / distance) * maxMove;
+      deltaY = (deltaY / distance) * maxMove;
     }
 
     // ขยับตัว Stick (UI)
@@ -84,10 +109,38 @@ export class JoystickComponent {
 
     // คำนวณ Vector (-1 ถึง 1) แล้วส่งไปให้ Player
     // เรากลับแกน Y เพราะใน 3D (Z) แกนบวกคือ "เดินหน้า" แต่ใน CSS/DOM แกน Y บวกคือ "ลงล่าง"
-    const vectorX = deltaX / this.maxMove;
-    const vectorY = -deltaY / this.maxMove;
-    
+    const vectorX = deltaX / maxMove;
+    const vectorY = -deltaY / maxMove;
+
     // ส่งค่าไปให้ Service ที่เรา Refactor ไว้
     this.playerControls.setJoystickInput(vectorX, vectorY);
+  }
+
+  private recalculateBounds(): void {
+    const baseRect = this.baseEl.getBoundingClientRect();
+    const stickRect = this.stickEl.getBoundingClientRect();
+
+    this.baseRadius = baseRect.width / 2;
+    this.stickRadius = stickRect.width / 2;
+    this.maxMove = Math.max(0, this.baseRadius - this.stickRadius - this.stickPadding);
+  }
+
+  private releasePointerCapture(pointerId: number): void {
+    const baseEl = this.baseRef?.nativeElement;
+    if (!baseEl) return;
+
+    try {
+      if ((baseEl as any).hasPointerCapture?.(pointerId)) {
+        baseEl.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // Ignore errors when releasing pointer capture
+    }
+  }
+
+  private resetStick(): void {
+    this.activePointerId = null;
+    this.stickEl.style.transform = 'translate(0px, 0px)';
+    this.playerControls.setJoystickInput(0, 0);
   }
 }
