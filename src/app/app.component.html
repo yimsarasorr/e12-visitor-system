@@ -21,9 +21,13 @@
     </ng-container>
 
     <ng-template #floorWorkspace>
-      <p-drawer 
-        [(visible)]="isDrawerVisible" 
-        position="left" 
+      <p-drawer
+        header="เมนูเนื้อหา"
+        [(visible)]="isDrawerVisible"
+        position="left"
+        [modal]="true"
+        [dismissible]="true"
+        [showCloseIcon]="true"
         styleClass="floor-drawer"
       >
         <div class="panel panel-left">

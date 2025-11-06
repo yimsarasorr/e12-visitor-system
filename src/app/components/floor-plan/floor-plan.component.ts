@@ -25,7 +25,7 @@ import { ThreeSceneService } from '../../services/floorplan/three-scene.service'
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
 import { PlayerControlsService } from '../../services/floorplan/player-controls.service';
 import { FloorplanInteractionService } from '../../services/floorplan/floorplan-interaction.service';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-floor-plan',
@@ -51,6 +51,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   
   private decimalPipe = inject(DecimalPipe);
   private ngZone = inject(NgZone);
+  private resizeObserver?: ResizeObserver;
 
   // 6. Properties ที่เหลือ
   private floorGroup: THREE.Group | null = null;
@@ -58,19 +59,31 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   public isFullscreen = false;
   
   // 7. Properties ที่ย้ายไปเป็น Observable
-  public playerPositionDisplay$: Observable<string>; 
-  
+  public playerPositionDisplay$: Observable<string>;
+  public detailDialogVisible = false;
+
   private cameraLookAtTarget = new THREE.Vector3(); // State ภายใน
   private isInitialized = false;
+  private subscriptions = new Subscription();
 
   constructor() {
     // 8. เชื่อม Output Event เข้ากับ Service State
-    this.interaction.currentZoneId$.subscribe(zoneId => {
-      this.zoneChanged.emit(zoneId);
-    });
+    this.subscriptions.add(
+      this.interaction.currentZoneId$.subscribe(zoneId => {
+        this.zoneChanged.emit(zoneId);
+      })
+    );
 
     // 9. สร้าง Observable สำหรับแสดงผลตำแหน่ง
     this.playerPositionDisplay$ = new BehaviorSubject<string>('');
+
+    this.subscriptions.add(
+      this.interaction.isDetailDialogVisible$.subscribe(visible => {
+        this.ngZone.run(() => {
+          this.detailDialogVisible = visible;
+        });
+      })
+    );
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -96,22 +109,34 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.threeScene.initialize(this.canvasRef.nativeElement);
     this.playerControls.initialize();
     this.interaction.initialize(this.floorData);
-    
+
     this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
     this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
     this.threeScene.scene.add(this.floorGroup);
-    
+
     this.cameraLookAtTarget.copy(this.playerControls.player.position);
     this.startRenderingLoop();
     setTimeout(() => {
       this.threeScene.resize();
     }, 0);
+
+    if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
+      this.ngZone.runOutsideAngular(() => {
+        this.resizeObserver = new ResizeObserver(() => this.threeScene.resize());
+        const hostElement = this.canvasRef.nativeElement?.parentElement as Element | null;
+        if (hostElement) {
+          this.resizeObserver.observe(hostElement);
+        }
+      });
+    }
   }
-  
+
   ngOnDestroy(): void {
     this.isInitialized = false;
     this.threeScene.destroy();
     this.floorBuilder.clearFloor();
+    this.subscriptions.unsubscribe();
+    this.resizeObserver?.disconnect();
   }
 
   private startRenderingLoop(): void {
