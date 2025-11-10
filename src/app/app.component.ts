@@ -169,6 +169,9 @@ export class App {
 
   // 4. เพิ่มฟังก์ชันสำหรับเปิด Drawer
   onMenuToggle(): void {
+    if (!this.selectedFloor) {
+      return;
+    }
     this.isDrawerVisible = !this.isDrawerVisible;
   }
 
