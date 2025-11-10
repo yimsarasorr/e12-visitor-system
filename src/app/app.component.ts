@@ -6,7 +6,9 @@ import { ButtonModule } from 'primeng/button';
 import { SplitterModule } from 'primeng/splitter';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
 import floorData from './components/floor-plan/e12-floor1.json';
-import { DrawerModule } from 'primeng/drawer'; // 1. Import DrawerModule
+import { DrawerModule } from 'primeng/drawer';
+import { RippleModule } from 'primeng/ripple';         // 1. เพิ่ม
+import { InputTextModule } from 'primeng/inputtext';   // 2. เพิ่ม
 
 @Component({
   selector: 'app-root',
@@ -18,7 +20,9 @@ import { DrawerModule } from 'primeng/drawer'; // 1. Import DrawerModule
     BuildingViewComponent, 
     ButtonModule, 
     SplitterModule,
-    DrawerModule // 2. เพิ่ม DrawerModule
+    DrawerModule,
+    RippleModule,     // 3. เพิ่ม
+    InputTextModule   // 4. เพิ่ม
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
@@ -166,5 +170,16 @@ export class App {
   // 4. เพิ่มฟังก์ชันสำหรับเปิด Drawer
   onMenuToggle(): void {
     this.isDrawerVisible = !this.isDrawerVisible;
+  }
+
+  // 5. เพิ่มฟังก์ชันนี้
+  onSearchFocus(): void {
+    // เมื่อกดค้นหาบน Mobile (ตอนที่อยู่ในหน้า FloorPlan)
+    // ให้เปิด Drawer (เมนู) เพื่อแสดง TreeView
+    if (this.selectedFloor && window.innerWidth <= 960) {
+      this.isDrawerVisible = true;
+    }
+    // ถ้ายังไม่เลือกชั้น (อยู่หน้า Building Selection) 
+    // ให้ TreeView (ถ้ามี) ในหน้านั้นจัดการการค้นหาเอง
   }
 }

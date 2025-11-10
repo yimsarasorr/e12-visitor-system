@@ -1,14 +1,31 @@
-<div class="main-layout">
-  <header class="main-header">
-    <h1>E12 Visitor Management System</h1>
-  </header>
+<div class="vms-layout">
   
-  <main class="main-content">
+  <header class="vms-header">
+    <i class="pi pi-shield"></i>
+    <span>E12 Visitor System</span>
+    <i class="pi pi-bell" pRipple></i>
+  </header>
+
+  <main class="vms-content">
+
+    <div class="floating-search-bar">
+      <span class="p-input-icon-left">
+        <i class="pi pi-search"></i>
+        <input 
+          pInputText 
+          type="text" 
+          [placeholder]="!selectedFloor ? 'ค้นหาอาคาร...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
+          (focus)="onSearchFocus()" 
+          aria-label="ค้นหาอาคารหรือสถานที่"
+        />
+      </span>
+    </div>
+
     <ng-container *ngIf="!selectedFloor; else floorWorkspace">
       <div class="building-selection">
         <div class="selection-copy">
           <h2>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h2>
-          <p>เลือกชั้นที่ต้องการเพื่อดูแผนผัง พื้นที่ และระดับการเข้าถึงสำหรับ Visitor, Staff หรือ Blacklist</p>
+          <p>เลือกชั้นที่ต้องการเพื่อดูแผนผัง พื้นที่ และระดับการเข้าถึง</p>
           <button type="button" *ngIf="selectedFloorIndex !== null" (click)="resetToBuildingOverview()">รีเซ็ตมุมมอง</button>
         </div>
         <div class="selection-canvas">
@@ -22,7 +39,6 @@
 
     <ng-template #floorWorkspace>
       <p-drawer
-        header="เมนูเนื้อหา"
         [(visible)]="isDrawerVisible"
         position="left"
         [modal]="true"
@@ -63,9 +79,25 @@
         <app-floor-plan
           [floorData]="selectedFloor"
           [panToTarget]="selectedNodeData"
-          (zoneChanged)="onZoneChanged($event)"
-          (menuToggle)="onMenuToggle()"> </app-floor-plan>
+          (zoneChanged)="onZoneChanged($event)">
+          </app-floor-plan>
       </div>
     </ng-template>
+
   </main>
+
+  <footer class="vms-footer">
+    <button pButton pRipple type="button" class="p-button-text footer-button active">
+      <i class="pi pi-compass"></i>
+      <span>สำรวจ</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-calendar"></i>
+      <span>การจอง</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-user"></i>
+      <span>โปรไฟล์</span>
+    </button>
+  </footer>
 </div>

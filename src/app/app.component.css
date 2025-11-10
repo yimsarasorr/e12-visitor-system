@@ -2,36 +2,99 @@
   font-family: Arial, sans-serif;
   color: #333;
 }
-.main-layout {
+
+/* 1. Layout หลัก */
+.vms-layout {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  min-height: 0;
+  width: 100vw;
+  overflow: hidden;
+  background: #f1f5f9;
 }
-.main-header {
-  background-color: #005A9C;
-  color: white;
-  padding: 10px 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+/* 2. Header */
+.vms-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #0f172a;
+  user-select: none;
 }
-.main-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
+
+.vms-header .pi {
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  border-radius: 50%;
+  cursor: pointer;
 }
-.main-content {
-  flex-grow: 1;
-  overflow: auto;
-  position: relative;
+
+/* 3. Content (สำคัญมาก) */
+.vms-content {
+  flex: 1;
+  position: relative; /* เพื่อให้ Search Bar ลอยได้ */
+  overflow: hidden;
   display: flex;
   min-height: 0;
 }
-.main-content ::ng-deep .p-splitter {
-  display: none;
+
+/* 4. Search Bar (ลอยทับ) */
+.floating-search-bar {
+  position: absolute;
+  top: 1.25rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 20;
+  pointer-events: auto;
 }
-.main-content ::ng-deep .p-splitter-gutter {
-  display: none;
+
+.floating-search-bar .p-input-icon-left {
+  width: 100%;
 }
+
+.floating-search-bar input[type="text"] {
+  width: 100%;
+  border-radius: 999px;
+  padding-left: 2.75rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* 5. Footer */
+.vms-footer {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: calc(4.5rem + env(safe-area-inset-bottom));
+  flex-shrink: 0;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -5px 20px rgba(15, 23, 42, 0.05);
+}
+
+.footer-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  color: #64748b;
+  border-radius: 8px;
+  flex: 1;
+  height: 100%;
+}
+.footer-button .pi { font-size: 1.25rem; }
+.footer-button span { font-size: 0.75rem; }
+.footer-button.active { color: #2563eb; }
+
+/* --- Style สำหรับ Child States (จากของเดิม) --- */
+
 .panel {
   padding: 1rem;
   height: 100%;
@@ -40,17 +103,9 @@
   flex-direction: column;
   min-height: 0;
 }
-.panel-right {
-  padding: 0;
-  overflow: hidden;
-}
-.panel-left h3 {
-  margin-top: 0;
-  flex-shrink: 0;
-}
-:host ::ng-deep .p-tree {
-  flex-grow: 1;
-}
+.panel-right { padding: 0; overflow: hidden; }
+.panel-left h3 { margin-top: 0; flex-shrink: 0; }
+:host ::ng-deep .p-tree { flex-grow: 1; }
 
 .building-selection {
   flex: 1;
@@ -61,147 +116,60 @@
   align-items: center;
   height: 100%;
   padding: 2.5rem 3rem;
+  padding-top: 6rem; /* เพิ่ม padding หลบ Search Bar */
+  box-sizing: border-box;
   background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 55%),
               radial-gradient(circle at bottom right, rgba(14,165,233,0.15), transparent 55%);
-  box-sizing: border-box;
 }
 
-.selection-copy h2 {
-  font-size: 2rem;
-  color: #0f172a;
-  margin-bottom: 1rem;
-}
+.selection-copy h2 { font-size: 2rem; color: #0f172a; margin-bottom: 1rem; }
+.selection-copy p { color: #475569; line-height: 1.6; margin-bottom: 1.5rem; }
+.selection-copy button { padding: 0.65rem 1.4rem; border-radius: 999px; border: none; background: #e2e8f0; color: #1e293b; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.2s ease; }
+.selection-copy button:hover { background: #cbd5f5; transform: translateY(-1px); }
+.selection-canvas { width: 100%; height: 100%; min-height: 520px; background: #fff; border-radius: 24px; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15); overflow: hidden; }
 
-.selection-copy p {
-  color: #475569;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-}
+.panel-section { display: flex; flex-direction: column; gap: 1rem; background: rgba(255,255,255,0.92); border-radius: 18px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); }
+.panel-section__header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.panel-section__subtitle { margin: 0; color: #64748b; }
+.link-button { background: none; border: none; color: #2563eb; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.link-button:hover { color: #1e40af; }
+.mini-building { height: 280px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(96, 165, 250, 0.15)); }
+.tree-section { flex: 1; }
+.tree-section h3 { margin: 0 0 0.5rem 0; }
 
-.selection-copy button {
-  padding: 0.65rem 1.4rem;
-  border-radius: 999px;
-  border: none;
-  background: #e2e8f0;
-  color: #1e293b;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.selection-copy button:hover {
-  background: #cbd5f5;
-  transform: translateY(-1px);
-}
-
-.selection-canvas {
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
-  overflow: hidden;
-}
-
-.panel-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: rgba(255,255,255,0.92);
-  border-radius: 18px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-}
-
-.panel-section__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.panel-section__subtitle {
-  margin: 0;
-  color: #64748b;
-}
-
-.link-button {
-  background: none;
-  border: none;
-  color: #2563eb;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
-.link-button:hover {
-  color: #1e40af;
-}
-
-.mini-building {
-  height: 280px;
-  border-radius: 16px;
-  overflow: hidden;
-  background: linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(96, 165, 250, 0.15));
-}
-
-.tree-section {
-  flex: 1;
-}
-
-.tree-section h3 {
-  margin: 0 0 0.5rem 0;
-}
-
+/* Layout ของ Floor Plan */
 .floor-plan-content {
   flex: 1;
   height: 100%;
   overflow: hidden;
   padding: 0;
   width: 100%;
-  transition: margin-left 0.3s ease;
   min-height: 0;
+  position: relative;
 }
 
-.floor-plan-content app-floor-plan {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-}
-
-/* 6. Style สำหรับ Mobile */
+/* Responsive */
 @media (max-width: 960px) {
-  :host ::ng-deep .floor-drawer {
-    width: 90%;
-    max-width: 380px;
-  }
-
-  :host ::ng-deep .floor-drawer .p-drawer-mask {
-    z-index: 1001;
-  }
-  :host ::ng-deep .floor-drawer {
-    z-index: 1002;
-  }
+  :host ::ng-deep .floor-drawer { width: 90%; max-width: 380px; z-index: 1002; }
+  :host ::ng-deep .floor-drawer .p-drawer-mask { z-index: 1001; }
 }
 
 @media (max-width: 768px) {
+  .vms-header {
+    font-size: 1rem;
+    padding: 0.75rem 0.75rem;
+  }
+  .floating-search-bar {
+    top: 1rem;
+    left: 0.75rem;
+    right: 0.75rem;
+  }
   .building-selection {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
-    justify-items: center;
-    text-align: center;
-    padding: 1.75rem 1.25rem;
-    gap: 1.5rem;
+    grid-template-rows: auto 1fr;
+    padding: 1.5rem;
+    padding-top: 5.5rem; /* หลบ Search Bar บนมือถือ */
   }
-
-  .selection-copy {
-    max-width: 420px;
-  }
-
-  .selection-canvas {
-    min-height: 360px;
-    width: 100%;
-  }
+  .selection-copy { max-width: 420px; text-align: center; }
+  .selection-canvas { min-height: 360px; width: 100%; }
 }

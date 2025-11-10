@@ -1,15 +1,12 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
-  <div class="floor-plan-stage">
-    <canvas #canvas></canvas>
-  </div>
-
+  <canvas #canvas></canvas>
   <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
-    <p-button
+    <!-- <p-button
       icon="pi pi-bars"
       (click)="onMenuToggleClick()"
       styleClass="p-button-secondary p-button-sm menu-toggle-button"
       ariaLabel="Toggle navigation"
-    ></p-button>
+    ></p-button> -->
 
     <div class="floor-indicator" *ngIf="floorData">
       <span class="floor-indicator__number">{{ floorData.floor }}</span>

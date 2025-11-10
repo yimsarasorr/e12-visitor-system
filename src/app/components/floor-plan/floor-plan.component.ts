@@ -41,7 +41,6 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() floorData: any;
   @Input() panToTarget: any;
   @Output() zoneChanged = new EventEmitter<string | null>();
-  @Output() menuToggle = new EventEmitter<void>(); // 1. เพิ่ม Output สำหรับ toggle menu
 
   // 5. Inject Services ทั้งหมด
   private threeScene = inject(ThreeSceneService);
@@ -238,10 +237,6 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
           displaySubject.next(newPositionDisplay);
         });
     }
-  }
-
-  public onMenuToggleClick(): void {
-    this.menuToggle.emit();
   }
 
   @HostListener('window:click', ['$event'])
