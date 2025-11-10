@@ -1,7 +1,7 @@
 <div class="vms-layout">
   <header class="vms-header">
     <div class="header-brand">
-      <div class="brand-logo-placeholder" aria-hidden="true"></div>
+      <img src="assets/fastpass-icon.svg" alt="Fastpass" class="brand-logo" />
       <div class="brand-copy">
         <span class="brand-title">Fastpass</span>
         <span class="brand-subtitle">ระบบเข้าอาคาร</span>
@@ -18,7 +18,7 @@
     </div>
   </header>
 
-  <main class="vms-content">
+  <main class="vms-content" [class.floor-active]="!!selectedFloor">
     <div class="floating-search-bar">
       <div class="search-shell">
         <i class="pi pi-search"></i>
@@ -26,12 +26,8 @@
           pInputText
           type="text"
           [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
-          (focus)="onSearchFocus()"
           aria-label="ค้นหาอาคารหรือสถานที่"
         />
-        <button type="button" class="search-drawer-trigger" (click)="onMenuToggle()">
-          <i class="pi pi-sliders-h"></i>
-        </button>
       </div>
     </div>
 
@@ -55,122 +51,33 @@
             </div>
           </div>
         </section>
-        <section class="overview-panel">
-          <div class="panel-intro">
-            <h3>รายการชั้นทั้งหมด</h3>
-            <p>เลือกระดับชั้นเพื่อดูแผนผังแบบ 3 มิติ ข้อมูลโซน และรายละเอียดพื้นที่</p>
-          </div>
-          <ul class="floor-list" role="list">
-            <li *ngFor="let floor of buildingData.floors" class="floor-list__item">
-              <button type="button" class="floor-card" (click)="onFloorSelected(floor.floor)" pRipple>
-                <div class="floor-card__left">
-                  <span class="floor-card__number">{{ floor.floor }}</span>
-                  <div class="floor-card__meta">
-                    <span class="floor-card__title">{{ floor.floorName || ('ชั้น ' + floor.floor) }}</span>
-                    <span class="floor-card__subtitle">ดูแผนผังแบบเรียลไทม์</span>
-                  </div>
-                </div>
-                <i class="pi pi-arrow-right"></i>
-              </button>
-            </li>
-          </ul>
-        </section>
       </div>
     </ng-container>
 
     <ng-template #floorWorkspace>
-      <p-drawer
-        [(visible)]="isDrawerVisible"
-        position="left"
-        [modal]="true"
-        [dismissible]="true"
-        [showCloseIcon]="true"
-        styleClass="floor-drawer"
-      >
-        <div class="drawer-content">
-          <div class="drawer-header">
-            <div>
-              <span class="badge">แผงควบคุม</span>
-              <h3>{{ buildingData.buildingName }}</h3>
-              <p>ชั้น {{ selectedFloor?.floor }}</p>
-            </div>
-            <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
+      <div class="floor-stage">
+        <div class="floor-stage__overlay">
+          <button type="button" class="stage-back" (click)="resetToBuildingOverview()">
+            <i class="pi pi-arrow-left"></i>
+            <span>กลับหน้าเลือกอาคาร</span>
+          </button>
+          <div class="floor-stage__info">
+            <span class="badge">3D FloorPlan</span>
+            <h2>{{ selectedFloor?.floorName || ('ชั้น ' + selectedFloor?.floor) }}</h2>
           </div>
-          <div class="drawer-section">
-            <h4>เลือกชั้นอื่น</h4>
-            <div class="mini-building">
-              <app-building-view
-                [floors]="buildingData.floors"
-                [activeFloor]="selectedFloor?.floor ?? null"
-                (floorSelected)="onFloorSelected($event)">
-              </app-building-view>
-            </div>
-          </div>
-          <div class="drawer-section">
-            <h4>โครงสร้างพื้นที่</h4>
-            <app-tree-view
-              [data]="buildingData"
-              [activeFloor]="selectedFloor?.floor ?? null"
-              [highlightedId]="highlightedId"
-              (nodeSelected)="onTreeNodeSelected($event)">
-            </app-tree-view>
-          </div>
-        </div>
-      </p-drawer>
-
-      <div class="floor-workspace">
-        <aside class="floor-sidebar">
-          <div class="sidebar-header">
-            <span class="badge">แผงควบคุม</span>
-            <h3>{{ buildingData.buildingName }}</h3>
-            <p>ชั้น {{ selectedFloor?.floor }}</p>
-            <button type="button" class="back-button" (click)="resetToBuildingOverview()">
-              <i class="pi pi-arrow-left"></i>
-              <span>กลับหน้าเลือกอาคาร</span>
+          <div class="floor-stage__floors" role="list">
+            <button
+              type="button"
+              class="floor-chip"
+              *ngFor="let floor of buildingData.floors"
+              [class.active]="floor.floor === selectedFloor?.floor"
+              (click)="onFloorSelected(floor.floor)"
+            >
+              {{ floor.floor }}
             </button>
           </div>
-          <div class="sidebar-section">
-            <h4>เลือกชั้นอื่น</h4>
-            <div class="mini-building">
-              <app-building-view
-                [floors]="buildingData.floors"
-                [activeFloor]="selectedFloor?.floor ?? null"
-                (floorSelected)="onFloorSelected($event)">
-              </app-building-view>
-            </div>
-          </div>
-          <div class="sidebar-section sidebar-tree">
-            <h4>โครงสร้างพื้นที่</h4>
-            <app-tree-view
-              [data]="buildingData"
-              [activeFloor]="selectedFloor?.floor ?? null"
-              [highlightedId]="highlightedId"
-              (nodeSelected)="onTreeNodeSelected($event)">
-            </app-tree-view>
-          </div>
-        </aside>
-        <section class="floor-main">
-          <div class="floor-main__header">
-            <div class="floor-main__titles">
-              <span class="badge">3D FloorPlan</span>
-              <h2>{{ selectedFloor?.floorName || ('ชั้น ' + selectedFloor?.floor) }}</h2>
-              <p>ภาพรวมแผนผังแบบโต้ตอบสำหรับทีมปฏิบัติการ</p>
-            </div>
-            <div class="floor-main__actions">
-              <button type="button" class="ghost-button" (click)="onMenuToggle()">
-                <i class="pi pi-list"></i>
-                <span>เปิดแผงควบคุม</span>
-              </button>
-            </div>
-          </div>
-          <div class="floor-main__canvas">
-            <app-floor-plan
-              [floorData]="selectedFloor"
-              [panToTarget]="selectedNodeData"
-              (zoneChanged)="onZoneChanged($event)">
-            </app-floor-plan>
-          </div>
-        </section>
+        </div>
+        <app-floor-plan [floorData]="selectedFloor"></app-floor-plan>
       </div>
     </ng-template>
   </main>
@@ -181,16 +88,16 @@
       <span>สำรวจ</span>
     </button>
     <button pButton pRipple type="button" class="p-button-text footer-button">
-      <i class="pi pi-building"></i>
-      <span>อาคาร</span>
+      <i class="pi pi-calendar"></i>
+      <span>การจอง</span>
     </button>
     <button pButton pRipple type="button" class="p-button-text footer-button">
-      <i class="pi pi-qrcode"></i>
-      <span>สแกน</span>
+      <i class="pi pi-bookmark"></i>
+      <span>บันทึกแล้ว</span>
     </button>
     <button pButton pRipple type="button" class="p-button-text footer-button">
       <i class="pi pi-clock"></i>
-      <span>ประวัติ</span>
+      <span>ล่าสุด</span>
     </button>
     <button pButton pRipple type="button" class="p-button-text footer-button">
       <i class="pi pi-user"></i>
