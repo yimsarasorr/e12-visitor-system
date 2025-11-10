@@ -1,36 +1,26 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FloorPlanComponent } from "./components/floor-plan/floor-plan.component";
-import { TreeViewComponent } from './components/tree-view/tree-view.component';
-import { ButtonModule } from 'primeng/button';
-import { SplitterModule } from 'primeng/splitter';
+import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
 import floorData from './components/floor-plan/e12-floor1.json';
-import { DrawerModule } from 'primeng/drawer';
-import { RippleModule } from 'primeng/ripple';         // 1. เพิ่ม
-import { InputTextModule } from 'primeng/inputtext';   // 2. เพิ่ม
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ 
-    CommonModule, 
-    FloorPlanComponent, 
-    TreeViewComponent, 
-    BuildingViewComponent, 
-    ButtonModule, 
-    SplitterModule,
-    DrawerModule,
-    RippleModule,     // 3. เพิ่ม
-    InputTextModule   // 4. เพิ่ม
+  imports: [
+    CommonModule,
+    FloorPlanComponent,
+    BuildingViewComponent,
+    ButtonModule,
+    InputTextModule
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
 export class App {
   buildingData: any = floorData;
-  highlightedId: string | null = null;
-  selectedNodeData: any = null;
   selectedFloorIndex: number | null = null;
   public lastActiveFloor: number | null = null;
   private readonly totalFloors = 12;
@@ -38,47 +28,21 @@ export class App {
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
-  public isDrawerVisible = false; // 3. เพิ่ม State สำหรับ Drawer
 
-  constructor(private cdr: ChangeDetectorRef) {
+  constructor() {
     this.initialiseFloors();
   }
 
-  onZoneChanged(id: string | null): void {
-    this.highlightedId = id;
-  }
-
-  onTreeNodeSelected(data: any): void {
-    if (data?.floor && this.selectedFloor?.floor !== data.floor) {
-      this.onFloorSelected(data.floor);
-    }
-    this.selectedNodeData = data ?? null;
-  }
-
   onFloorSelected(floorNumber: number): void {
-  const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
-  if (index === -1) return;
+    const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
+    if (index === -1) return;
 
-  // 1. อัปเดต state เพื่อบอก building-view ให้ไฮไลท์
-  this.lastActiveFloor = floorNumber;
-
-  // 2. บังคับให้ Angular อัปเดตหน้าจอทันทีเพื่อแสดงไฮไลท์
-  this.cdr.detectChanges(); 
-
-  // 3. หลังจากหน้าจออัปเดตแล้ว ค่อยหน่วงเวลาเพื่อเปลี่ยนหน้า
-  setTimeout(() => {
+    this.lastActiveFloor = floorNumber;
     this.selectedFloorIndex = index;
-    this.highlightedId = null;
-    this.selectedNodeData = null;
-    this.cdr.detectChanges(); 
-    }, 50); 
   }
 
   resetToBuildingOverview(): void {
     this.selectedFloorIndex = null;
-    this.selectedNodeData = null;
-    this.highlightedId = null;
-    this.isDrawerVisible = false;
   }
 
   get selectedFloor(): any | null {
@@ -165,21 +129,5 @@ export class App {
       start: { x: wall.start.x, y: wall.start.y },
       end: { x: wall.end.x, y: wall.end.y }
     }));
-  }
-
-  // 4. เพิ่มฟังก์ชันสำหรับเปิด Drawer
-  onMenuToggle(): void {
-    this.isDrawerVisible = !this.isDrawerVisible;
-  }
-
-  // 5. เพิ่มฟังก์ชันนี้
-  onSearchFocus(): void {
-    // เมื่อกดค้นหาบน Mobile (ตอนที่อยู่ในหน้า FloorPlan)
-    // ให้เปิด Drawer (เมนู) เพื่อแสดง TreeView
-    if (this.selectedFloor && window.innerWidth <= 960) {
-      this.isDrawerVisible = true;
-    }
-    // ถ้ายังไม่เลือกชั้น (อยู่หน้า Building Selection) 
-    // ให้ TreeView (ถ้ามี) ในหน้านั้นจัดการการค้นหาเอง
   }
 }

@@ -12,27 +12,18 @@
   width: 100%;
   height: 100%;
   min-height: 0;
-  overflow: hidden; /* Add this to prevent scrolling issues */
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
-}
-
-.floor-plan-stage {
-  position: relative;
-  flex: 1;
-  height: 100%;
-  min-height: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.2), rgba(15, 23, 42, 0.05));
+  border-radius: 28px;
 }
 
 canvas {
   width: 100%;
   height: 100%;
   display: block;
-  box-sizing: border-box; /* Add this to account for padding/border */
-}
-
-.floor-plan-stage canvas {
-  background-color: #EBF0F5;
+  box-sizing: border-box;
+  background-color: #ebf0f5;
 }
 
 .floor-plan-wrapper.fullscreen {
@@ -42,38 +33,43 @@ canvas {
   width: 100vw;
   height: 100vh;
   z-index: 1000;
-  background-color: #EBF0F5;
+  border-radius: 0;
 }
 
 .floor-plan-toolbar {
   position: absolute;
-  top: 16px;
+  top: 20px;
   left: 24px;
   right: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  z-index: 10;
+  gap: 1rem;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.floor-plan-toolbar > * {
   pointer-events: auto;
 }
 
 .floor-indicator {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  background-color: rgba(255, 255, 255, 0.85);
-  padding: 10px 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+  gap: 0.75rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(16px);
 }
 
 .floor-indicator__number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: linear-gradient(135deg, #2563eb, #38bdf8);
   color: #ffffff;
@@ -84,7 +80,7 @@ canvas {
 .floor-indicator__label {
   display: flex;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .floor-indicator__title {
@@ -94,108 +90,83 @@ canvas {
 }
 
 .floor-indicator__subtitle {
-  font-size: 0.75rem;
-  color: #475569;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
+  color: #64748b;
 }
 
-.access-terminal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  background-color: rgba(15, 23, 42, 0.85);
-  padding: 10px 18px;
-  border-radius: 16px;
-  color: #e2e8f0;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+.toolbar-actions {
+  display: inline-flex;
+  gap: 0.6rem;
 }
 
-.terminal-title {
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #94a3b8;
+:host ::ng-deep .toolbar-button .p-button-label {
+  font-weight: 600;
 }
 
-.terminal-buttons {
-  display: flex;
-  gap: 8px;
+:host ::ng-deep .toolbar-button .p-button-icon {
+  font-size: 1rem;
 }
 
-.view-toggle-container {
-  display: flex;
-  gap: 10px;
+.toolbar-button,
+.toolbar-icon-button {
+  border-radius: 999px;
 }
 
-:host ::ng-deep .view-toggle-container .p-button {
-  white-space: nowrap;
+:host ::ng-deep .toolbar-button.p-button {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e0f2fe;
+  padding: 0.45rem 1.25rem;
 }
 
-.mobile-controls {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  user-select: none;
+:host ::ng-deep .toolbar-button.p-button:hover {
+  background: rgba(37, 99, 235, 0.85);
 }
 
-@media (min-width: 1024px) {
-  .mobile-controls {
-    display: none;
-  }
-}
-
-.horizontal-controls {
-  display: flex;
-  justify-content: center;
-}
-
-.control-btn {
-  width: 60px;
-  height: 60px;
-  margin: 5px;
-  font-size: 24px;
-  background-color: rgba(0, 123, 255, 0.7);
-  color: white;
-  border: none;
+:host ::ng-deep .toolbar-icon-button.p-button {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #bfdbfe;
 }
 
-.control-btn:active {
-  background-color: rgba(0, 86, 179, 0.9);
+:host ::ng-deep .toolbar-icon-button.p-button:hover {
+  background: rgba(37, 99, 235, 0.82);
 }
 
 .info-display-container {
   position: absolute;
-  bottom: 20px;
+  bottom: 2.5rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 5px;
-  z-index: 5;
+  justify-content: center;
   pointer-events: none;
+  z-index: 15;
 }
 
 .zone-display {
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 14px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.65);
+  color: #f8fafc;
+  font-size: 0.85rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+}
+
+.zone-display .pi {
+  font-size: 0.95rem;
+  color: #38bdf8;
 }
 
 .detail-content {
@@ -206,7 +177,7 @@ canvas {
 
 .detail-header h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   color: #0f172a;
 }
 
@@ -216,69 +187,83 @@ canvas {
   font-size: 0.9rem;
 }
 
+.detail-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #1e293b;
+}
+
 .detail-description {
   margin: 0;
   color: #475569;
 }
 
-.detail-section {
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 0.75rem;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-}
-
-.detail-section h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
-  color: #1e293b;
-}
-
-.detail-section ul {
-  margin: 0;
-  padding-left: 1.2rem;
-  color: #475569;
-}
-
-.detail-section p {
-  margin: 0.25rem 0;
-  color: #475569;
-}
-
-@media (max-width: 1023px) {
-  .info-display-container {
-    bottom: 140px;
-  }
-}
-
-@media (max-width: 900px) {
-  .floor-plan-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-
-  .floor-indicator,
-  .access-terminal,
-  .view-toggle-container {
-    justify-content: center;
-  }
-
-  .access-terminal {
-    align-items: stretch;
-  }
-
-  .terminal-buttons {
-    justify-content: center;
-  }
-}
-
 .status-locked {
-  color: #ff4c4c;
-  font-weight: bold;
+  color: #ef4444;
+  font-weight: 700;
 }
 
 .status-unlocked {
-  color: #4caf50;
-  font-weight: bold;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+@media (max-width: 1023px) {
+  .floor-plan-wrapper {
+    border-radius: 22px;
+  }
+
+  .floor-plan-toolbar {
+    top: 16px;
+    left: 16px;
+    right: 16px;
+  }
+
+  .floor-indicator {
+    padding: 0.55rem 1rem;
+  }
+
+  .info-display-container {
+    bottom: calc(8.5rem + env(safe-area-inset-bottom));
+    width: calc(100% - 3rem);
+  }
+
+  .zone-display {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  :host ::ng-deep .toolbar-button.p-button {
+    padding-inline: 1rem;
+  }
+
+  .floor-indicator__number {
+    width: 40px;
+    height: 40px;
+    font-size: 1.05rem;
+  }
+
+  .floor-indicator__title {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .floor-plan-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .info-display-container {
+    bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
 }

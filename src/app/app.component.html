@@ -1,89 +1,82 @@
 <div class="vms-layout">
-  
   <header class="vms-header">
-    <i class="pi pi-shield"></i>
-    <span>E12 Visitor System</span>
-    <i class="pi pi-bell" pRipple></i>
+    <div class="header-brand">
+      <img src="assets/fastpass-icon.svg" alt="Fastpass" class="brand-logo" />
+      <div class="brand-copy">
+        <span class="brand-title">Fastpass</span>
+        <span class="brand-subtitle">ระบบเข้าอาคาร</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button pButton pRipple type="button" class="p-button-rounded p-button-text header-action">
+        <i class="pi pi-bell"></i>
+      </button>
+      <div class="header-user-chip">
+        <i class="pi pi-user"></i>
+        <span>Guest</span>
+      </div>
+    </div>
   </header>
 
-  <main class="vms-content">
-
-    <div class="floating-search-bar">
-      <span class="p-input-icon-left">
-        <i class="pi pi-search"></i>
-        <input 
-          pInputText 
-          type="text" 
-          [placeholder]="!selectedFloor ? 'ค้นหาอาคาร...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
-          (focus)="onSearchFocus()" 
-          aria-label="ค้นหาอาคารหรือสถานที่"
-        />
-      </span>
-    </div>
-
-    <ng-container *ngIf="!selectedFloor; else floorWorkspace">
-      <div class="building-selection">
-        <div class="selection-copy">
-          <h2>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h2>
-          <p>เลือกชั้นที่ต้องการเพื่อดูแผนผัง พื้นที่ และระดับการเข้าถึง</p>
-          <button type="button" *ngIf="selectedFloorIndex !== null" (click)="resetToBuildingOverview()">รีเซ็ตมุมมอง</button>
-        </div>
-        <div class="selection-canvas">
-          <app-building-view
-            [floors]="buildingData.floors"
-            [activeFloor]="lastActiveFloor" (floorSelected)="onFloorSelected($event)">
-          </app-building-view>
+  <main class="vms-content" [class.floor-active]="!!selectedFloor">
+    <section class="search-section">
+      <div class="floating-search-bar">
+        <div class="search-shell">
+          <i class="pi pi-search"></i>
+          <input
+            pInputText
+            type="text"
+            [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
+            aria-label="ค้นหาอาคารหรือสถานที่"
+          />
         </div>
       </div>
-    </ng-container>
+    </section>
 
-    <ng-template #floorWorkspace>
-      <p-drawer
-        [(visible)]="isDrawerVisible"
-        position="left"
-        [modal]="true"
-        [dismissible]="true"
-        [showCloseIcon]="true"
-        styleClass="floor-drawer"
-      >
-        <div class="panel panel-left">
-          <div class="panel-section">
-            <div class="panel-section__header">
-              <div>
-                <h3>{{ buildingData.buildingName }}</h3>
-                <p class="panel-section__subtitle">ชั้น {{ selectedFloor?.floor }}</p>
-              </div>
-              <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
-            </div>
-            <div class="mini-building">
-              <app-building-view
-                [floors]="buildingData.floors"
-                [activeFloor]="selectedFloor?.floor ?? null"
-                (floorSelected)="onFloorSelected($event)">
-              </app-building-view>
-            </div>
-          </div>
-          <div class="panel-section tree-section">
-            <h3>Zone Directory</h3>
-            <app-tree-view
-              [data]="buildingData"
-              [activeFloor]="selectedFloor?.floor ?? null"
-              [highlightedId]="highlightedId"
-              (nodeSelected)="onTreeNodeSelected($event)">
-            </app-tree-view>
+    <section class="overview" *ngIf="!selectedFloor">
+      <div class="overview__copy">
+        <span class="badge">3D FloorPlan</span>
+        <h1>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h1>
+        <p>หมุนดูอาคารแบบสามมิติก่อนเลือกชั้นที่ต้องการเข้าใช้งาน</p>
+      </div>
+      <div class="overview__canvas">
+        <app-building-view
+          [floors]="buildingData.floors"
+          [activeFloor]="lastActiveFloor"
+          (floorSelected)="onFloorSelected($event)">
+        </app-building-view>
+      </div>
+    </section>
+
+    <section class="floor-explorer" *ngIf="selectedFloor">
+      <header class="floor-explorer__toolbar">
+        <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
+          <i class="pi pi-arrow-left"></i>
+          <span>กลับหน้าอาคาร</span>
+        </button>
+        <div class="floor-explorer__meta">
+          <span class="badge">3D FloorPlan</span>
+          <h2>{{ selectedFloor?.floorName || ('ชั้น ' + selectedFloor?.floor) }}</h2>
+        </div>
+        <div class="floor-explorer__selector" *ngIf="buildingData.floors?.length">
+          <span class="selector-label">เลือกชั้น</span>
+          <div class="selector-track" role="list">
+            <button
+              type="button"
+              class="selector-chip"
+              *ngFor="let floor of buildingData.floors"
+              [class.active]="floor.floor === selectedFloor?.floor"
+              (click)="onFloorSelected(floor.floor)"
+            >
+              {{ floor.floor }}
+            </button>
           </div>
         </div>
-      </p-drawer>
-
-      <div class="panel panel-right floor-plan-content">
-        <app-floor-plan
-          [floorData]="selectedFloor"
-          [panToTarget]="selectedNodeData"
-          (zoneChanged)="onZoneChanged($event)">
-          </app-floor-plan>
+      </header>
+      <div class="floor-explorer__canvas">
+        <app-floor-plan [floorData]="selectedFloor"></app-floor-plan>
       </div>
-    </ng-template>
-
+    </section>
   </main>
 
   <footer class="vms-footer">
@@ -94,6 +87,14 @@
     <button pButton pRipple type="button" class="p-button-text footer-button">
       <i class="pi pi-calendar"></i>
       <span>การจอง</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-bookmark"></i>
+      <span>บันทึกแล้ว</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-clock"></i>
+      <span>ล่าสุด</span>
     </button>
     <button pButton pRipple type="button" class="p-button-text footer-button">
       <i class="pi pi-user"></i>
