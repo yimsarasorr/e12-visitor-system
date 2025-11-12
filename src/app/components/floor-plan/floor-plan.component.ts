@@ -163,10 +163,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     let targetCameraPos = new THREE.Vector3();
 
     if (this.currentView === 'iso') {
-      const offset = new THREE.Vector3(-6.5, 6.25, -6.5);
+      const offset = new THREE.Vector3(-5.5, 5.2, -5.5);
       targetCameraPos.copy(cameraLookAt).add(offset);
     } else {
-      targetCameraPos.set(cameraLookAt.x, 32, cameraLookAt.z);
+      targetCameraPos.set(cameraLookAt.x, 28, cameraLookAt.z);
     }
 
     const lerpAlpha = 0.08;
@@ -181,8 +181,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.cameraLookAtTarget.copy(baseTarget);
 
     const cameraPosition = this.currentView === 'iso'
-      ? baseTarget.clone().add(new THREE.Vector3(-6.5, 6.25, -6.5))
-      : new THREE.Vector3(baseTarget.x, 32, baseTarget.z);
+      ? baseTarget.clone().add(new THREE.Vector3(-5.5, 5.2, -5.5))
+      : new THREE.Vector3(baseTarget.x, 28, baseTarget.z);
 
     this.threeScene.camera.position.copy(cameraPosition);
     this.threeScene.controls.target.copy(baseTarget);

@@ -41,6 +41,14 @@ export class App {
     this.selectedFloorIndex = index;
   }
 
+  onFloorDropdownChange(floorValue: number | string): void {
+    const parsed = typeof floorValue === 'number' ? floorValue : Number(floorValue);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    this.onFloorSelected(parsed);
+  }
+
   resetToBuildingOverview(): void {
     this.selectedFloorIndex = null;
   }
@@ -48,6 +56,13 @@ export class App {
   get selectedFloor(): any | null {
     if (this.selectedFloorIndex === null) return null;
     return this.buildingData.floors[this.selectedFloorIndex] ?? null;
+  }
+
+  get floorOptions(): { label: string; value: number }[] {
+    return (this.buildingData?.floors ?? []).map((floor: any) => ({
+      label: floor.floorName ?? `ชั้น ${floor.floor}`,
+      value: floor.floor
+    }));
   }
 
   private initialiseFloors(): void {
