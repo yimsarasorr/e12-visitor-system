@@ -1,95 +1,90 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
   <canvas #canvas></canvas>
-  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
-    <!-- <p-button
-      icon="pi pi-bars"
-      (click)="onMenuToggleClick()"
-      styleClass="p-button-secondary p-button-sm menu-toggle-button"
-      ariaLabel="Toggle navigation"
-    ></p-button> -->
 
+  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
     <div class="floor-indicator" *ngIf="floorData">
       <span class="floor-indicator__number">{{ floorData.floor }}</span>
       <div class="floor-indicator__label">
         <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
-        <span class="floor-indicator__subtitle">Active Floor</span>
+        <span class="floor-indicator__subtitle">Floorplan</span>
       </div>
     </div>
 
-    <div class="access-terminal">
-      <span class="terminal-title">Face Access</span>
-      <div class="terminal-buttons">
-        <p-button
-          (click)="interaction.simulateAuthentication(-1)"
-          label="-1"
-          styleClass="p-button-sm p-button-danger"
-        ></p-button>
-        <p-button
-          (click)="interaction.simulateAuthentication(0)"
-          label="0"
-          styleClass="p-button-sm p-button-secondary"
-        ></p-button>
-        <p-button
-          (click)="interaction.simulateAuthentication(1)"
-          label="1"
-          styleClass="p-button-sm p-button-success"
-        ></p-button>
-      </div>
+    <div class="toolbar-actions">
+      <button
+        pButton
+        type="button"
+        class="toolbar-button"
+        [icon]="currentView === 'iso' ? 'pi pi-cube' : 'pi pi-map'"
+        [label]="currentView === 'iso' ? 'มุมมองอาคาร' : 'มุมมองจากบน'"
+        (click)="toggleView()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        class="toolbar-icon-button"
+        [icon]="isFullscreen ? 'pi pi-compress' : 'pi pi-external-link'"
+        (click)="toggleFullscreen()"
+        [attr.aria-label]="isFullscreen ? 'ปิดโหมดเต็มหน้าจอ' : 'เปิดโหมดเต็มหน้าจอ'"
+      ></button>
     </div>
-
-    <div class="view-toggle-container">
-      </div>
   </div>
 
   <div class="info-display-container">
-    <div *ngIf="interaction.currentZoneId$ | async as zoneId" class="zone-display">
-      Zone: <strong>{{ zoneId }}</strong>
+    <div class="zone-display" *ngIf="interaction.currentZoneId$ | async as zoneId">
+      <i class="pi pi-map-marker"></i>
+      <span>{{ zoneId }}</span>
     </div>
-    <div *ngIf="playerPositionDisplay$ | async as posDisplay" class="zone-display">
-      Coords: <strong>{{ posDisplay }}</strong>
+    <div class="zone-display" *ngIf="playerPositionDisplay$ | async as position">
+      <i class="pi pi-compass"></i>
+      <span>{{ position }}</span>
     </div>
   </div>
 
   <app-joystick></app-joystick>
-
-  </div>
+</div>
 
 <p-dialog
-  header="Details"
+  header="รายละเอียดพื้นที่"
   [(visible)]="detailDialogVisible"
   (onHide)="interaction.closeDetail()"
   [modal]="true"
   appendTo="body"
-  [style]="{ width: '50vw', 'max-width': '520px' }"
+  [style]="{ width: '48vw', 'max-width': '480px' }"
   [draggable]="false"
   [resizable]="false"
 >
   <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
     <div class="detail-header">
-      <div>
-        <h3>{{ selected.data?.name || selected.data?.id }}</h3>
-        <p class="detail-subtitle">
-          {{ getTypeLabel(selected.type) }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
-        </p>
-      </div>
+      <h3>{{ selected.data?.name || selected.data?.id }}</h3>
+      <p class="detail-subtitle">
+        {{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
+      </p>
     </div>
 
     <ng-container [ngSwitch]="selected.type">
-      <ng-container *ngSwitchCase="'door'">
-        <div class="detail-section">
-          <h4>Door Access</h4>
-          <p><strong>Required Level:</strong> {{ selected.data.accessLevel }}</p>
-          <p><strong>Your Level:</strong> {{ interaction.currentUserAccessLevel$ | async }}</p>
-          <p><strong>Status:</strong>
-            <ng-container *ngIf="interaction.currentUserAccessLevel$ | async as currentLevel">
-              <span [ngClass]="currentLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
-                {{ currentLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
-              </span>
-            </ng-container>
-          </p>
-        </div>
-      </ng-container>
-
-      </ng-container>
+      <div class="detail-section" *ngSwitchCase="'door'">
+        <h4>สิทธิ์การเข้าใช้งาน</h4>
+        <p>
+          <strong>ระดับที่ต้องการ:</strong>
+          {{ selected.data.accessLevel }}
+        </p>
+        <p>
+          <strong>ระดับของคุณ:</strong>
+          {{ interaction.currentUserAccessLevel$ | async }}
+        </p>
+        <p>
+          <strong>สถานะ:</strong>
+          <ng-container *ngIf="interaction.currentUserAccessLevel$ | async as currentLevel">
+            <span [ngClass]="currentLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
+              {{ currentLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
+            </span>
+          </ng-container>
+        </p>
+      </div>
+      <div class="detail-section" *ngSwitchDefault>
+        <p class="detail-description">รอข้อมูลเพิ่มเติมสำหรับพื้นที่นี้</p>
+      </div>
+    </ng-container>
   </div>
 </p-dialog>

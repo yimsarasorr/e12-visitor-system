@@ -1,82 +1,306 @@
 :host {
-  font-family: Arial, sans-serif;
-  color: #333;
+  font-family: 'Prompt', 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #0f172a;
 }
 
-/* 1. Layout หลัก */
 .vms-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  background: #f1f5f9;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
 }
 
-/* 2. Header */
 .vms-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  flex-shrink: 0;
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #0f172a;
-  user-select: none;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-.vms-header .pi {
-  font-size: 1.25rem;
-  padding: 0.5rem;
-  border-radius: 50%;
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.2);
+}
+
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.brand-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  color: #1d4ed8;
+}
+
+.brand-subtitle {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-action .pi {
+  font-size: 1.15rem;
+  color: #1e293b;
+}
+
+.header-user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(226, 232, 240, 0.65);
+  border-radius: 999px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.header-user-chip .pi {
+  color: #2563eb;
+}
+
+.vms-content {
+  position: relative;
+  flex: 1;
+  padding: 1.75rem clamp(1rem, 4vw, 3rem) 6rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.search-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+.floating-search-bar {
+  position: relative;
+  width: min(100%, 520px);
+  z-index: 1;
+}
+
+.search-shell {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem 0.45rem 1.25rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.search-shell .pi-search {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.search-shell input[type='text'] {
+  flex: 1;
+  border: none;
+  box-shadow: none;
+  padding-left: 0.85rem;
+  font-size: 0.95rem;
+}
+
+.search-shell input[type='text']:focus {
+  outline: none;
+}
+
+.overview {
+  width: min(100%, 1140px);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 2vw, 2.25rem);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.12);
+  display: flex;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: stretch;
+}
+
+.overview__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.overview__copy h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.2vw + 1rem, 2.3rem);
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.overview__copy p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+
+.overview__canvas {
+  flex: 1 1 60%;
+  background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.25), rgba(59, 130, 246, 0.2));
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+  min-height: clamp(360px, 50vh, 560px);
+}
+
+.overview__canvas app-building-view,
+.overview__canvas app-building-view ::ng-deep canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.floor-explorer {
+  width: min(100%, 1140px);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 2vw, 2.25rem);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 240, 0.9));
+  border-radius: 32px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 2vw, 2rem);
+}
+
+.floor-explorer__back-row {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.floor-explorer__content {
+  display: flex;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  align-items: stretch;
+}
+
+.floor-explorer__details {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.floor-explorer__details h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.8vw + 1rem, 2rem);
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.floor-explorer__lead {
+  margin: 0;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.floor-explorer__selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.selector-label {
+  font-size: 0.95rem;
+}
+
+.floor-dropdown {
+  width: 100%;
+  appearance: none;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  padding: 0.65rem 2.75rem 0.65rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #0f172a;
+  background: #ffffff url('data:image/svg+xml,%3Csvg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M1 1.5L6 6.5L11 1.5" stroke="%231f2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/%3E%3C/svg%3E') no-repeat right 1rem center;
+  background-size: 12px 8px;
   cursor: pointer;
 }
 
-/* 3. Content (สำคัญมาก) */
-.vms-content {
-  flex: 1;
-  position: relative; /* เพื่อให้ Search Bar ลอยได้ */
-  overflow: hidden;
-  display: flex;
-  min-height: 0;
+.floor-dropdown:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
 }
 
-/* 4. Search Bar (ลอยทับ) */
-.floating-search-bar {
-  position: absolute;
-  top: 1.25rem;
-  left: 1rem;
-  right: 1rem;
-  z-index: 20;
-  pointer-events: auto;
-}
-
-.floating-search-bar .p-input-icon-left {
-  width: 100%;
-}
-
-.floating-search-bar input[type="text"] {
-  width: 100%;
-  border-radius: 999px;
-  padding-left: 2.75rem;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-/* 5. Footer */
-.vms-footer {
-  display: flex;
-  justify-content: space-around;
+.toolbar-back {
+  display: inline-flex;
   align-items: center;
-  height: calc(4.5rem + env(safe-area-inset-bottom));
-  flex-shrink: 0;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -5px 20px rgba(15, 23, 42, 0.05);
+  gap: 0.6rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toolbar-back:hover {
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.toolbar-back .pi {
+  font-size: 0.9rem;
+}
+
+.floor-explorer__canvas {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.25), rgba(59, 130, 246, 0.18));
+  min-height: clamp(380px, 60vh, 640px);
+  flex: 1 1 auto;
+}
+
+.floor-explorer__canvas app-floor-plan {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.vms-footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: rgba(15, 23, 42, 0.96);
+  color: #e2e8f0;
+  padding: 0.5rem 1rem env(safe-area-inset-bottom, 1rem);
+  gap: 0.35rem;
+  z-index: 90;
 }
 
 .footer-button {
@@ -84,92 +308,90 @@
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  color: #64748b;
-  border-radius: 8px;
-  flex: 1;
-  height: 100%;
-}
-.footer-button .pi { font-size: 1.25rem; }
-.footer-button span { font-size: 0.75rem; }
-.footer-button.active { color: #2563eb; }
-
-/* --- Style สำหรับ Child States (จากของเดิม) --- */
-
-.panel {
-  padding: 1rem;
-  height: 100%;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-.panel-right { padding: 0; overflow: hidden; }
-.panel-left h3 { margin-top: 0; flex-shrink: 0; }
-:host ::ng-deep .p-tree { flex-grow: 1; }
-
-.building-selection {
-  flex: 1;
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(260px, 340px) 1fr;
-  gap: 2.5rem;
-  align-items: center;
-  height: 100%;
-  padding: 2.5rem 3rem;
-  padding-top: 6rem; /* เพิ่ม padding หลบ Search Bar */
-  box-sizing: border-box;
-  background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 55%),
-              radial-gradient(circle at bottom right, rgba(14,165,233,0.15), transparent 55%);
+  color: inherit;
+  font-weight: 600;
 }
 
-.selection-copy h2 { font-size: 2rem; color: #0f172a; margin-bottom: 1rem; }
-.selection-copy p { color: #475569; line-height: 1.6; margin-bottom: 1.5rem; }
-.selection-copy button { padding: 0.65rem 1.4rem; border-radius: 999px; border: none; background: #e2e8f0; color: #1e293b; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.2s ease; }
-.selection-copy button:hover { background: #cbd5f5; transform: translateY(-1px); }
-.selection-canvas { width: 100%; height: 100%; min-height: 520px; background: #fff; border-radius: 24px; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15); overflow: hidden; }
-
-.panel-section { display: flex; flex-direction: column; gap: 1rem; background: rgba(255,255,255,0.92); border-radius: 18px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08); }
-.panel-section__header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
-.panel-section__subtitle { margin: 0; color: #64748b; }
-.link-button { background: none; border: none; color: #2563eb; font-weight: 600; cursor: pointer; text-decoration: underline; }
-.link-button:hover { color: #1e40af; }
-.mini-building { height: 280px; border-radius: 16px; overflow: hidden; background: linear-gradient(135deg, rgba(148, 163, 184, 0.35), rgba(96, 165, 250, 0.15)); }
-.tree-section { flex: 1; }
-.tree-section h3 { margin: 0 0 0.5rem 0; }
-
-/* Layout ของ Floor Plan */
-.floor-plan-content {
-  flex: 1;
-  height: 100%;
-  overflow: hidden;
-  padding: 0;
-  width: 100%;
-  min-height: 0;
-  position: relative;
+.footer-button .pi {
+  font-size: 1.1rem;
 }
 
-/* Responsive */
-@media (max-width: 960px) {
-  :host ::ng-deep .floor-drawer { width: 90%; max-width: 380px; z-index: 1002; }
-  :host ::ng-deep .floor-drawer .p-drawer-mask { z-index: 1001; }
+.footer-button.active {
+  color: #38bdf8;
+}
+
+@media (max-width: 1200px) {
+  .overview,
+  .floor-explorer {
+    border-radius: 28px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .vms-content {
+    padding: 1.5rem clamp(0.75rem, 4vw, 1.75rem) 5.5rem;
+    gap: 2rem;
+  }
+
+  .overview {
+    flex-direction: column;
+  }
+
+  .overview__canvas {
+    min-height: clamp(320px, 48vh, 520px);
+  }
+
+  .floor-explorer {
+    padding: 1.5rem;
+  }
+
+  .floor-explorer__content {
+    flex-direction: column;
+  }
+
+  .floor-explorer__details {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .overview {
+    gap: 1.5rem;
+  }
+
+  .overview__canvas,
+  .floor-explorer__canvas {
+    min-height: clamp(320px, 52vh, 520px);
+  }
+}
+
+@media (min-width: 992px) {
+  .floor-explorer__content {
+    flex-direction: row;
+  }
 }
 
 @media (max-width: 768px) {
-  .vms-header {
-    font-size: 1rem;
-    padding: 0.75rem 0.75rem;
+  .brand-logo {
+    width: 38px;
+    height: 38px;
   }
+
+  .search-section {
+    padding: 0;
+  }
+
   .floating-search-bar {
-    top: 1rem;
-    left: 0.75rem;
-    right: 0.75rem;
+    width: 100%;
   }
-  .building-selection {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    padding: 1.5rem;
-    padding-top: 5.5rem; /* หลบ Search Bar บนมือถือ */
+
+  .vms-footer {
+    border-radius: 18px 18px 0 0;
   }
-  .selection-copy { max-width: 420px; text-align: center; }
-  .selection-canvas { min-height: 360px; width: 100%; }
+}
+
+@media (max-width: 600px) {
+  .floor-explorer__details {
+    gap: 1rem;
+  }
 }
