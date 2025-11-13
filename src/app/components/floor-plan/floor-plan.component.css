@@ -11,9 +11,11 @@
   flex: 1;
   width: 100%;
   height: 100%;
-  min-height: 0;
+  min-height: clamp(360px, 65vh, 780px);
   overflow: hidden;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
   background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.2), rgba(15, 23, 42, 0.05));
   border-radius: 28px;
 }
@@ -22,6 +24,7 @@ canvas {
   width: 100%;
   height: 100%;
   display: block;
+  flex: 1 1 auto;
   box-sizing: border-box;
   background-color: #ebf0f5;
 }
@@ -169,6 +172,94 @@ canvas {
   color: #38bdf8;
 }
 
+:host ::ng-deep .floor-detail-dialog .p-dialog-content {
+  padding: 1.5rem;
+}
+
+:host ::ng-deep .floor-detail-dialog .p-dialog-header {
+  padding: 1.25rem 1.5rem 0.75rem;
+}
+
+@media (max-width: 1024px) {
+  .floor-plan-wrapper {
+    min-height: clamp(320px, 62vh, 720px);
+  }
+}
+
+@media (max-width: 768px) {
+  .floor-plan-wrapper {
+    border-radius: 24px;
+    min-height: clamp(320px, 70vh, 760px);
+  }
+
+  .floor-plan-toolbar {
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .floor-indicator {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.55rem 0.9rem;
+    gap: 0.6rem;
+  }
+
+  .floor-indicator__number {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .floor-indicator__title {
+    font-size: 0.95rem;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  :host ::ng-deep .toolbar-button.p-button {
+    width: 100%;
+    justify-content: space-between;
+    padding-inline: 1rem;
+  }
+
+  .info-display-container {
+    bottom: calc(7.5rem + env(safe-area-inset-bottom));
+    flex-direction: column;
+    gap: 0.5rem;
+    width: calc(100% - 2.5rem);
+  }
+
+  .zone-display {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .floor-plan-toolbar {
+    gap: 0.6rem;
+  }
+
+  .toolbar-actions {
+    gap: 0.5rem;
+  }
+
+  :host ::ng-deep .toolbar-button.p-button {
+    padding-inline: 0.85rem;
+  }
+
+  .zone-display {
+    padding: 0.35rem 0.6rem;
+  }
+}
+
 .detail-content {
   display: flex;
   flex-direction: column;
@@ -210,60 +301,3 @@ canvas {
   font-weight: 700;
 }
 
-@media (max-width: 1023px) {
-  .floor-plan-wrapper {
-    border-radius: 22px;
-  }
-
-  .floor-plan-toolbar {
-    top: 16px;
-    left: 16px;
-    right: 16px;
-  }
-
-  .floor-indicator {
-    padding: 0.55rem 1rem;
-  }
-
-  .info-display-container {
-    bottom: calc(8.5rem + env(safe-area-inset-bottom));
-    width: calc(100% - 3rem);
-  }
-
-  .zone-display {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
-  :host ::ng-deep .toolbar-button.p-button {
-    padding-inline: 1rem;
-  }
-
-  .floor-indicator__number {
-    width: 40px;
-    height: 40px;
-    font-size: 1.05rem;
-  }
-
-  .floor-indicator__title {
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .floor-plan-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  .toolbar-actions {
-    justify-content: flex-start;
-  }
-
-  .info-display-container {
-    bottom: calc(9rem + env(safe-area-inset-bottom));
-  }
-}

@@ -51,8 +51,10 @@
   [modal]="true"
   appendTo="body"
   [style]="{ width: '48vw', 'max-width': '480px' }"
+  [breakpoints]="{ '1200px': '60vw', '960px': '70vw', '640px': '92vw' }"
   [draggable]="false"
   [resizable]="false"
+  styleClass="floor-detail-dialog"
 >
   <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
     <div class="detail-header">

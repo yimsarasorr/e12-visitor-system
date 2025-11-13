@@ -1,36 +1,74 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
-import floorData from './components/floor-plan/e12-floor1.json';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { ToolbarModule } from 'primeng/toolbar';
+import { CardModule } from 'primeng/card';
+import { SelectModule } from 'primeng/select';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
+import { ChipModule } from 'primeng/chip';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+
+import { BuildingData, BuildingDataService } from './services/building-data.service';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     FloorPlanComponent,
     BuildingViewComponent,
     ButtonModule,
-    InputTextModule
+    InputTextModule,
+    ToolbarModule,
+    CardModule,
+    SelectModule,
+    InputGroupModule,
+    InputGroupAddonModule,
+    ChipModule,
+    ProgressSpinnerModule
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class App {
-  buildingData: any = floorData;
+export class App implements OnInit {
+  buildingData: BuildingData;
   selectedFloorIndex: number | null = null;
   public lastActiveFloor: number | null = null;
+  public selectedFloorValue: number | null = null;
+  public isLoading = true;
   private readonly totalFloors = 12;
   private readonly floorPalette = [
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
 
-  constructor() {
-    this.initialiseFloors();
+  constructor(private buildingDataService: BuildingDataService) {
+    this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
+  }
+
+  ngOnInit(): void {
+    this.loadBuilding('E12');
+  }
+
+  private loadBuilding(buildingId: string): void {
+    this.isLoading = true;
+    this.buildingDataService
+      .getBuilding(buildingId)
+      .pipe(take(1))
+      .subscribe(data => {
+      this.buildingData = this.prepareBuildingData(data);
+      this.selectedFloorIndex = null;
+      this.selectedFloorValue = null;
+      this.lastActiveFloor = null;
+      this.isLoading = false;
+    });
   }
 
   onFloorSelected(floorNumber: number): void {
@@ -39,9 +77,15 @@ export class App {
 
     this.lastActiveFloor = floorNumber;
     this.selectedFloorIndex = index;
+    this.selectedFloorValue = floorNumber;
   }
 
-  onFloorDropdownChange(floorValue: number | string): void {
+  onFloorDropdownChange(floorValue: number | string | null): void {
+    if (floorValue === null || floorValue === undefined || floorValue === '') {
+      this.resetToBuildingOverview();
+      return;
+    }
+
     const parsed = typeof floorValue === 'number' ? floorValue : Number(floorValue);
     if (Number.isNaN(parsed)) {
       return;
@@ -51,6 +95,7 @@ export class App {
 
   resetToBuildingOverview(): void {
     this.selectedFloorIndex = null;
+    this.selectedFloorValue = null;
   }
 
   get selectedFloor(): any | null {
@@ -65,23 +110,35 @@ export class App {
     }));
   }
 
-  private initialiseFloors(): void {
-    if (!this.buildingData?.floors) {
-      this.buildingData = { buildingId: 'E12', buildingName: 'E12 Engineering Building', floors: [] };
-    }
-    const baseWalls = this.buildingData.floors[0]?.walls ? this.cloneWalls(this.buildingData.floors[0].walls) : [];
+  private prepareBuildingData(data: BuildingData): BuildingData {
+    const baseData: BuildingData = {
+      buildingId: data?.buildingId ?? 'E12',
+      buildingName: data?.buildingName ?? 'E12 Engineering Building',
+      floors: Array.isArray(data?.floors) ? [...data.floors] : []
+    };
 
-    this.buildingData.floors = this.buildingData.floors.map((floor: any, index: number) => ({
+    const baseWalls = baseData.floors[0]?.walls ? this.cloneWalls(baseData.floors[0].walls) : [];
+
+    const hydratedFloors = baseData.floors.map((floor: any, index: number) => ({
       ...floor,
       color: floor.color ?? this.floorPalette[index % this.floorPalette.length]
     }));
 
-    const existingCount = this.buildingData.floors.length;
+    const existingCount = hydratedFloors.length;
     for (let floorNumber = existingCount + 1; floorNumber <= this.totalFloors; floorNumber++) {
-      this.buildingData.floors.push(
-        this.createPlaceholderFloor(floorNumber, this.floorPalette[(floorNumber - 1) % this.floorPalette.length], baseWalls)
+      hydratedFloors.push(
+        this.createPlaceholderFloor(
+          floorNumber,
+          this.floorPalette[(floorNumber - 1) % this.floorPalette.length],
+          baseWalls
+        )
       );
     }
+
+    return {
+      ...baseData,
+      floors: hydratedFloors
+    };
   }
 
   private createPlaceholderFloor(floorNumber: number, color: string, baseWalls: any[]): any {

@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, HostListener, Output, EventEmitter, Input, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from 'three-mesh-bvh';
@@ -16,7 +16,7 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
   templateUrl: './building-view.component.html',
   styleUrls: ['./building-view.component.css']
 })
-export class BuildingViewComponent implements AfterViewInit, OnChanges {
+export class BuildingViewComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvasBuilding') private canvasRef!: ElementRef;
   @Output() floorSelected = new EventEmitter<number>();
   @Input() floors: any[] = [];
@@ -29,6 +29,7 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
   private clickableFloors: THREE.Mesh[] = [];
   private floorOverlays: THREE.Mesh[] = [];
   private floorLabels: THREE.Sprite[] = [];
+  private resizeObserver?: ResizeObserver;
 
   private floorColors: string[] = [
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
@@ -38,13 +39,23 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
   ngAfterViewInit(): void {
     this.createScene();
     this.createBuildingModel();
+    this.resizeRenderer();
     this.startRenderingLoop();
+
+    if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
+      this.resizeObserver = new ResizeObserver(() => this.resizeRenderer());
+      this.resizeObserver.observe(this.canvas.parentElement ?? this.canvas);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['activeFloor'] && this.floorOverlays.length > 0) {
       this.updateFloorHighlights();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
   }
 
   private get canvas(): HTMLCanvasElement {
@@ -80,6 +91,29 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges {
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.scene.add(ground);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.resizeRenderer();
+  }
+
+  private resizeRenderer(): void {
+    if (!this.renderer || !this.camera) {
+      return;
+    }
+
+    const parent = this.canvas.parentElement;
+    const width = parent?.clientWidth ?? this.canvas.clientWidth;
+    const height = parent?.clientHeight ?? this.canvas.clientHeight;
+
+    if (!width || !height) {
+      return;
+    }
+
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
   }
     
   // --- 2. สร้างฟังก์ชันสำหรับรวม Geometry ของหน้าต่าง ---
