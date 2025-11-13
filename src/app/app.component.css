@@ -22,6 +22,15 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  border: none;
+  gap: 1rem;
+}
+
+.vms-header .p-toolbar-group-start,
+.vms-header .p-toolbar-group-end {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .header-brand {
@@ -68,18 +77,15 @@
   color: #1e293b;
 }
 
-.header-user-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
+:host ::ng-deep .header-user-chip.p-chip {
   background: rgba(226, 232, 240, 0.65);
   border-radius: 999px;
   font-weight: 600;
   color: #1f2937;
+  padding: 0.35rem 0.75rem;
 }
 
-.header-user-chip .pi {
+:host ::ng-deep .header-user-chip .pi {
   color: #2563eb;
 }
 
@@ -100,54 +106,108 @@
 }
 
 .floating-search-bar {
-  position: relative;
   width: min(100%, 520px);
-  z-index: 1;
-}
-
-.search-shell {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
   border-radius: 999px;
-  padding: 0.45rem 1.1rem 0.45rem 1.25rem;
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #ffffff;
+  overflow: hidden;
 }
 
-.search-shell .pi-search {
+.floating-search-bar .p-inputgroup-addon {
+  background: transparent;
+  border: none;
+  padding-left: 1.1rem;
+  display: flex;
+  align-items: center;
+}
+
+.search-addon .pi {
   color: #64748b;
   font-size: 1rem;
 }
 
-.search-shell input[type='text'] {
+.floating-search-bar .p-inputtext {
   flex: 1;
   border: none;
   box-shadow: none;
-  padding-left: 0.85rem;
+  padding: 0.75rem 1.25rem 0.75rem 0.85rem;
   font-size: 0.95rem;
 }
 
-.search-shell input[type='text']:focus {
+.floating-search-bar .p-inputtext:focus {
   outline: none;
+  box-shadow: none;
 }
 
-.overview {
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #334155;
+  padding: 3rem 0;
+}
+
+:host ::ng-deep .loading-spinner .p-progress-spinner-circle {
+  stroke: #2563eb;
+}
+
+:host ::ng-deep .overview-card.p-card {
   width: min(100%, 1140px);
   margin: 0 auto;
-  padding: clamp(1.5rem, 2vw, 2.25rem);
   background: rgba(255, 255, 255, 0.95);
   border-radius: 32px;
   box-shadow: 0 32px 80px rgba(15, 23, 42, 0.12);
+  border: none;
+}
+
+:host ::ng-deep .floor-card.p-card {
+  width: min(100%, 1140px);
+  margin: 0 auto;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 240, 0.9));
+  border-radius: 32px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
+  border: none;
+}
+
+:host ::ng-deep .overview-card .p-card-body,
+:host ::ng-deep .floor-card .p-card-body {
+  padding: clamp(1.5rem, 2vw, 2.25rem);
+}
+
+:host ::ng-deep .overview-card .p-card-content,
+:host ::ng-deep .floor-card .p-card-content {
+  padding: 0;
+}
+
+.overview-body {
   display: flex;
   gap: clamp(1.5rem, 3vw, 2.5rem);
   align-items: stretch;
+}
+
+.overview__canvas {
+  flex: 1 1 60%;
+  background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.25), rgba(59, 130, 246, 0.2));
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+  min-height: clamp(360px, 54vh, 560px);
+}
+
+.overview__canvas app-building-view,
+.overview__canvas app-building-view ::ng-deep canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .overview__copy {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  justify-content: center;
 }
 
 .overview__copy h1 {
@@ -163,30 +223,7 @@
   line-height: 1.6;
 }
 
-
-.overview__canvas {
-  flex: 1 1 60%;
-  background: radial-gradient(circle at 20% 20%, rgba(148, 163, 184, 0.25), rgba(59, 130, 246, 0.2));
-  border-radius: 28px;
-  overflow: hidden;
-  position: relative;
-  min-height: clamp(360px, 50vh, 560px);
-}
-
-.overview__canvas app-building-view,
-.overview__canvas app-building-view ::ng-deep canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
 .floor-explorer {
-  width: min(100%, 1140px);
-  margin: 0 auto;
-  padding: clamp(1.5rem, 2vw, 2.25rem);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(226, 232, 240, 0.9));
-  border-radius: 32px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
   display: flex;
   flex-direction: column;
   gap: clamp(1.5rem, 2vw, 2rem);
@@ -208,6 +245,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
 }
 
 .floor-explorer__details h2 {
@@ -235,23 +273,25 @@
   font-size: 0.95rem;
 }
 
-.floor-dropdown {
+:host ::ng-deep .floor-dropdown.p-select {
   width: 100%;
-  appearance: none;
-  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 16px;
-  padding: 0.65rem 2.75rem 0.65rem 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
   font-weight: 600;
-  font-size: 0.95rem;
-  color: #0f172a;
-  background: #ffffff url('data:image/svg+xml,%3Csvg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg"%3E%3Cpath d="M1 1.5L6 6.5L11 1.5" stroke="%231f2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/%3E%3C/svg%3E') no-repeat right 1rem center;
-  background-size: 12px 8px;
-  cursor: pointer;
 }
 
-.floor-dropdown:focus {
-  outline: 2px solid rgba(37, 99, 235, 0.35);
-  outline-offset: 2px;
+:host ::ng-deep .floor-dropdown.p-select .p-select-label {
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+}
+
+:host ::ng-deep .floor-dropdown.p-select .p-select-label.p-placeholder {
+  color: #64748b;
+}
+
+:host ::ng-deep .floor-dropdown.p-select .p-select-trigger {
+  width: 2.75rem;
 }
 
 .toolbar-back {
@@ -321,8 +361,8 @@
 }
 
 @media (max-width: 1200px) {
-  .overview,
-  .floor-explorer {
+  :host ::ng-deep .overview-card.p-card,
+  :host ::ng-deep .floor-card.p-card {
     border-radius: 28px;
   }
 }
@@ -333,16 +373,12 @@
     gap: 2rem;
   }
 
-  .overview {
+  .overview-body {
     flex-direction: column;
   }
 
   .overview__canvas {
     min-height: clamp(320px, 48vh, 520px);
-  }
-
-  .floor-explorer {
-    padding: 1.5rem;
   }
 
   .floor-explorer__content {
@@ -355,19 +391,13 @@
 }
 
 @media (max-width: 900px) {
-  .overview {
+  .overview-body {
     gap: 1.5rem;
   }
 
   .overview__canvas,
   .floor-explorer__canvas {
-    min-height: clamp(320px, 52vh, 520px);
-  }
-}
-
-@media (min-width: 992px) {
-  .floor-explorer__content {
-    flex-direction: row;
+    min-height: clamp(320px, 56vh, 560px);
   }
 }
 
@@ -385,13 +415,53 @@
     width: 100%;
   }
 
+  .overview__copy {
+    text-align: center;
+  }
+
+  .floor-explorer__details {
+    gap: 1rem;
+  }
+
+  .floor-explorer__details h2 {
+    text-align: center;
+  }
+
+  .floor-explorer__selector {
+    align-items: stretch;
+  }
+
+  .floor-explorer__canvas {
+    min-height: clamp(360px, 68vh, 720px);
+  }
+
   .vms-footer {
     border-radius: 18px 18px 0 0;
   }
 }
 
 @media (max-width: 600px) {
+  .overview__canvas,
+  .floor-explorer__canvas {
+    border-radius: 22px;
+  }
+
+  .overview__copy h1 {
+    font-size: clamp(1.45rem, 4vw + 1rem, 1.9rem);
+  }
+
   .floor-explorer__details {
-    gap: 1rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  :host ::ng-deep .floor-dropdown.p-select {
+    max-width: 360px;
+    width: 100%;
+  }
+
+  .toolbar-back {
+    width: 100%;
+    justify-content: center;
   }
 }

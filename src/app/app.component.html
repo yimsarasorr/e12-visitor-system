@@ -1,87 +1,106 @@
 <div class="vms-layout">
-  <header class="vms-header">
-    <div class="header-brand">
-      <img src="assets/FastPass_Icon_1.png" alt="Fastpass" class="brand-logo" />
-      <div class="brand-copy">
-        <span class="brand-title">Fastpass</span>
-        <span class="brand-subtitle">ระบบเข้าอาคาร</span>
+  <p-toolbar styleClass="vms-header">
+    <ng-template pTemplate="start">
+      <div class="header-brand">
+        <img src="assets/FastPass_Icon_1.png" alt="Fastpass" class="brand-logo" />
+        <div class="brand-copy">
+          <span class="brand-title">Fastpass</span>
+          <span class="brand-subtitle">ระบบเข้าอาคาร</span>
+        </div>
       </div>
-    </div>
-    <div class="header-actions">
-      <button pButton pRipple type="button" class="p-button-rounded p-button-text header-action">
-        <i class="pi pi-bell"></i>
-      </button>
-      <div class="header-user-chip">
-        <i class="pi pi-user"></i>
-        <span>Guest</span>
+    </ng-template>
+    <ng-template pTemplate="end">
+      <div class="header-actions">
+        <button pButton pRipple type="button" class="p-button-rounded p-button-text header-action">
+          <i class="pi pi-bell"></i>
+        </button>
+        <p-chip label="Guest" icon="pi pi-user" class="header-user-chip"></p-chip>
       </div>
-    </div>
-  </header>
+    </ng-template>
+  </p-toolbar>
 
   <main class="vms-content" [class.floor-active]="!!selectedFloor">
     <section class="search-section">
-      <div class="floating-search-bar">
-        <div class="search-shell">
+      <p-inputGroup class="floating-search-bar">
+        <span class="p-inputgroup-addon search-addon">
           <i class="pi pi-search"></i>
-          <input
-            pInputText
-            type="text"
-            [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
-            aria-label="ค้นหาอาคารหรือสถานที่"
-          />
-        </div>
-      </div>
+        </span>
+        <input
+          pInputText
+          type="text"
+          [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
+          aria-label="ค้นหาอาคารหรือสถานที่"
+        />
+      </p-inputGroup>
     </section>
 
-    <section class="overview" *ngIf="!selectedFloor">
-      <div class="overview__canvas">
-        <app-building-view
-          [floors]="buildingData.floors"
-          [activeFloor]="lastActiveFloor"
-          (floorSelected)="onFloorSelected($event)">
-        </app-building-view>
-      </div>
-      <div class="overview__copy">
-        <h1>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h1>
-        <p>
-          หมุนดูแปลนอาคารก่อนเลือกชั้นที่ต้องการเข้าใช้งาน และบันทึกรายละเอียดไว้สำหรับการจำลอง
-          การเข้าออกในระบบ Fastpass
-        </p>
-      </div>
-    </section>
+    <ng-container *ngIf="!isLoading; else loadingState">
+      <p-card *ngIf="!selectedFloor" styleClass="overview-card">
+        <ng-template pTemplate="content">
+          <div class="overview-body">
+            <div class="overview__canvas">
+              <app-building-view
+                [floors]="buildingData.floors"
+                [activeFloor]="lastActiveFloor"
+                (floorSelected)="onFloorSelected($event)">
+              </app-building-view>
+            </div>
+            <div class="overview__copy">
+              <h1>{{ buildingData?.buildingName || 'สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์' }}</h1>
+              <p>
+                หมุนดูแปลนอาคารก่อนเลือกชั้นที่ต้องการเข้าใช้งาน และบันทึกรายละเอียดไว้สำหรับการจำลอง
+                การเข้าออกในระบบ Fastpass
+              </p>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
 
-    <section class="floor-explorer" *ngIf="selectedFloor">
-      <div class="floor-explorer__back-row">
-        <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
-          <i class="pi pi-arrow-left"></i>
-          <span>กลับไปเลือกอาคาร</span>
-        </button>
+      <p-card *ngIf="selectedFloor" styleClass="floor-card">
+        <ng-template pTemplate="content">
+          <div class="floor-explorer">
+            <div class="floor-explorer__back-row">
+              <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
+                <i class="pi pi-arrow-left"></i>
+                <span>กลับไปเลือกอาคาร</span>
+              </button>
+            </div>
+            <div class="floor-explorer__content">
+              <aside class="floor-explorer__details">
+                <h2>{{ selectedFloor?.floorName || ('ชั้น ' + selectedFloor?.floor) }}</h2>
+                <p class="floor-explorer__lead">
+                  เลือกชั้นอื่นเพื่อสลับการจำลอง และใช้จอยสติ๊กเพื่อหมุนดูตำแหน่งต่างๆ ของพื้นที่ภายในอาคาร
+                </p>
+                <div class="floor-explorer__selector" *ngIf="buildingData.floors?.length">
+                  <span class="selector-label">เลือกชั้น</span>
+                  <p-select
+                    [options]="floorOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [(ngModel)]="selectedFloorValue"
+                    [showClear]="true"
+                    placeholder="เลือกชั้น"
+                    (onChange)="onFloorDropdownChange($event.value)"
+                    inputId="floorDropdown"
+                    styleClass="floor-dropdown"
+                  ></p-select>
+                </div>
+              </aside>
+              <div class="floor-explorer__canvas">
+                <app-floor-plan [floorData]="selectedFloor"></app-floor-plan>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+    </ng-container>
+
+    <ng-template #loadingState>
+      <div class="loading-state">
+        <p-progressSpinner styleClass="loading-spinner"></p-progressSpinner>
+        <span>กำลังโหลดข้อมูลอาคาร...</span>
       </div>
-      <div class="floor-explorer__content">
-        <aside class="floor-explorer__details">
-          <h2>{{ selectedFloor?.floorName || ('ชั้น ' + selectedFloor?.floor) }}</h2>
-          <p class="floor-explorer__lead">
-            เลือกชั้นอื่นเพื่อสลับการจำลอง และใช้จอยสติ๊กเพื่อหมุนดูตำแหน่งต่างๆ ของพื้นที่ภายในอาคาร
-          </p>
-          <label class="floor-explorer__selector" *ngIf="buildingData.floors?.length">
-            <span class="selector-label">เลือกชั้น</span>
-            <select
-              class="floor-dropdown"
-              [value]="selectedFloor?.floor ?? ''"
-              (change)="onFloorDropdownChange($any($event.target).value)"
-              aria-label="เลือกชั้น"
-            >
-              <option *ngFor="let option of floorOptions" [value]="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
-        </aside>
-        <div class="floor-explorer__canvas">
-          <app-floor-plan [floorData]="selectedFloor"></app-floor-plan>
-        </div>
-      </div>
-    </section>
+    </ng-template>
   </main>
 
   <footer class="vms-footer">

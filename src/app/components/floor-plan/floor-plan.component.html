@@ -10,34 +10,36 @@
       </div>
     </div>
 
-    <div class="toolbar-actions">
-      <button
-        pButton
-        type="button"
-        class="toolbar-button"
-        [icon]="currentView === 'iso' ? 'pi pi-cube' : 'pi pi-map'"
-        [label]="currentView === 'iso' ? 'มุมมองอาคาร' : 'มุมมองจากบน'"
-        (click)="toggleView()"
-      ></button>
-      <button
-        pButton
-        type="button"
-        class="toolbar-icon-button"
-        [icon]="isFullscreen ? 'pi pi-compress' : 'pi pi-external-link'"
-        (click)="toggleFullscreen()"
-        [attr.aria-label]="isFullscreen ? 'ปิดโหมดเต็มหน้าจอ' : 'เปิดโหมดเต็มหน้าจอ'"
-      ></button>
-    </div>
-  </div>
+    <div class="toolbar-meta">
+      <div class="toolbar-actions">
+        <button
+          pButton
+          type="button"
+          class="toolbar-button"
+          [icon]="currentView === 'iso' ? 'pi pi-cube' : 'pi pi-map'"
+          [label]="currentView === 'iso' ? 'มุมมองอาคาร' : 'มุมมองจากบน'"
+          (click)="toggleView()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          class="toolbar-icon-button"
+          [icon]="isFullscreen ? 'pi pi-compress' : 'pi pi-external-link'"
+          (click)="toggleFullscreen()"
+          [attr.aria-label]="isFullscreen ? 'ปิดโหมดเต็มหน้าจอ' : 'เปิดโหมดเต็มหน้าจอ'"
+        ></button>
+      </div>
 
-  <div class="info-display-container">
-    <div class="zone-display" *ngIf="interaction.currentZoneId$ | async as zoneId">
-      <i class="pi pi-map-marker"></i>
-      <span>{{ zoneId }}</span>
-    </div>
-    <div class="zone-display" *ngIf="playerPositionDisplay$ | async as position">
-      <i class="pi pi-compass"></i>
-      <span>{{ position }}</span>
+      <div class="info-display-container">
+        <div class="zone-display" *ngIf="interaction.currentZoneId$ | async as zoneId">
+          <i class="pi pi-map-marker"></i>
+          <span>{{ zoneId }}</span>
+        </div>
+        <div class="zone-display" *ngIf="playerPositionDisplay$ | async as position">
+          <i class="pi pi-compass"></i>
+          <span>{{ position }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -51,8 +53,10 @@
   [modal]="true"
   appendTo="body"
   [style]="{ width: '48vw', 'max-width': '480px' }"
+  [breakpoints]="{ '1200px': '60vw', '960px': '70vw', '640px': '92vw' }"
   [draggable]="false"
   [resizable]="false"
+  styleClass="floor-detail-dialog"
 >
   <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
     <div class="detail-header">
