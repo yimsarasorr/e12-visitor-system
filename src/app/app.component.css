@@ -118,6 +118,8 @@
   background: transparent;
   border: none;
   padding-left: 1.1rem;
+  display: flex;
+  align-items: center;
 }
 
 .search-addon .pi {
@@ -243,6 +245,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  width: 100%;
 }
 
 .floor-explorer__details h2 {
@@ -450,6 +453,11 @@
   .floor-explorer__details {
     align-items: center;
     text-align: center;
+  }
+
+  :host ::ng-deep .floor-dropdown.p-select {
+    max-width: 360px;
+    width: 100%;
   }
 
   .toolbar-back {
