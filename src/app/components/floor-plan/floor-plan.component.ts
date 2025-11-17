@@ -38,8 +38,11 @@ import { JoystickComponent } from '../joystick/joystick.component';
 export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
   @Input() floorData: any;
+  @Input() floors: any[] = [];
+  @Input() activeFloorValue: number | null = null;
   @Input() panToTarget: any;
   @Output() zoneChanged = new EventEmitter<string | null>();
+  @Output() floorChange = new EventEmitter<number>();
 
   private threeScene = inject(ThreeSceneService);
   private floorBuilder = inject(FloorplanBuilderService);
@@ -151,6 +154,13 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   toggleView(): void {
     this.currentView = this.currentView === 'iso' ? 'top' : 'iso';
     this.snapCameraToTarget();
+  }
+
+  onFloorChipSelected(floorNumber: number): void {
+    if (floorNumber === this.activeFloorValue) {
+      return;
+    }
+    this.floorChange.emit(floorNumber);
   }
 
   toggleFullscreen(): void {

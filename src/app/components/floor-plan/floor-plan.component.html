@@ -2,11 +2,25 @@
   <canvas #canvas></canvas>
 
   <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
-    <div class="floor-indicator" *ngIf="floorData">
-      <span class="floor-indicator__number">{{ floorData.floor }}</span>
-      <div class="floor-indicator__label">
-        <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
-        <span class="floor-indicator__subtitle">Floorplan</span>
+    <div class="floor-toolbar-left" *ngIf="floorData || floors?.length">
+      <div class="floor-indicator" *ngIf="floorData">
+        <span class="floor-indicator__number">{{ floorData.floor }}</span>
+        <div class="floor-indicator__label">
+          <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
+          <span class="floor-indicator__subtitle">Floorplan</span>
+        </div>
+      </div>
+
+      <div class="floor-switcher" *ngIf="floors?.length">
+        <button
+          type="button"
+          class="floor-chip"
+          *ngFor="let floor of floors"
+          [class.active]="floor.floor === activeFloorValue"
+          (click)="onFloorChipSelected(floor.floor)"
+        >
+          {{ floor.floor }}
+        </button>
       </div>
     </div>
 

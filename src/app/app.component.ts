@@ -131,17 +131,11 @@ export class App implements OnInit {
     this.selectedFloorValue = floorNumber;
   }
 
-  onFloorDropdownChange(floorValue: number | string | null): void {
-    if (floorValue === null || floorValue === undefined || floorValue === '') {
-      this.resetToBuildingOverview();
+  onFloorPlanFloorChange(floorNumber: number): void {
+    if (typeof floorNumber !== 'number' || Number.isNaN(floorNumber)) {
       return;
     }
-
-    const parsed = typeof floorValue === 'number' ? floorValue : Number(floorValue);
-    if (Number.isNaN(parsed)) {
-      return;
-    }
-    this.onFloorSelected(parsed);
+    this.onFloorSelected(floorNumber);
   }
 
   resetToBuildingOverview(): void {
@@ -152,13 +146,6 @@ export class App implements OnInit {
   get selectedFloor(): any | null {
     if (this.selectedFloorIndex === null) return null;
     return this.buildingData.floors[this.selectedFloorIndex] ?? null;
-  }
-
-  get floorOptions(): { label: string; value: number }[] {
-    return (this.buildingData?.floors ?? []).map((floor: any) => ({
-      label: floor.floorName ?? `ชั้น ${floor.floor}`,
-      value: floor.floor
-    }));
   }
 
   cycleSheetState(): void {

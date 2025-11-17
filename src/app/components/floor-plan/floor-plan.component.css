@@ -56,6 +56,50 @@ canvas {
   pointer-events: auto;
 }
 
+.floor-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: min(60%, 520px);
+}
+
+.floor-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+  overflow-x: auto;
+}
+
+.floor-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+.floor-chip {
+  border: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
+  background: transparent;
+  color: #cbd5f5;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.floor-chip.active {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: #ffffff;
+}
+
+.floor-chip:not(.active):hover {
+  color: #f8fafc;
+}
+
 .camera-control-stack {
   position: absolute;
   inset-inline-end: clamp(12px, 3vw, 28px);
@@ -281,6 +325,22 @@ canvas {
   .toolbar-meta {
     align-items: stretch;
     gap: 0.7rem;
+  }
+
+  .floor-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 100%;
+  }
+
+  .floor-switcher {
+    justify-content: flex-start;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .floor-chip {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.65rem;
   }
 
   .toolbar-actions {
