@@ -57,6 +57,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   public currentView: 'iso' | 'top' = 'iso';
   public isFullscreen = false;
   public isJoystickVisible = true;
+  public get activeFloorMeta(): any | undefined {
+    return this.floors?.find(floor => floor.floor === this.activeFloorValue);
+  }
 
   private readonly playerPositionDisplaySubject = new BehaviorSubject<string>('');
   public readonly playerPositionDisplay$ = this.playerPositionDisplaySubject.asObservable();
