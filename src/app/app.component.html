@@ -117,19 +117,24 @@
     </div>
   </ng-template>
 
-  <p-drawer 
-    [(visible)]="isDrawerVisible" 
-    position="bottom" 
-    [styleClass]="isSheetExpanded ? 'access-sheet-drawer sheet-expanded' : 'access-sheet-drawer'"
+  <p-drawer
+    [(visible)]="isDrawerVisible"
+    position="bottom"
+    [styleClass]="'access-sheet-drawer sheet-state-' + sheetState"
     [showCloseIcon]="false"
-    [modal]="false" 
+    [modal]="false"
+    [appendTo]="'body'"
+    [blockScroll]="false"
+    [dismissible]="false"
+    [baseZIndex]="1100"
+    [ngStyle]="{ height: sheetHeight }"
   >
     <ng-template pTemplate="header">
-      <div 
-        class="bottom-sheet-header" 
-        (click)="toggleSheetState()" 
-        (touchstart)="onTouchStart($event)"
-        (touchend)="onTouchEnd($event)"
+      <div
+        class="bottom-sheet-header"
+        (click)="onSheetHeaderTap()"
+        (touchstart)="onGestureStart($event)"
+        (mousedown)="onGestureStart($event)"
       >
         <div class="bottom-sheet-grabber"></div>
       </div>

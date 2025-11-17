@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
@@ -21,6 +21,8 @@ import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
 import { AuthService, RolePermission } from './services/auth.service';
 import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
 import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
+
+type SheetState = 'peek' | 'default' | 'expanded';
 
 @Component({
   selector: 'app-root',
@@ -53,8 +55,27 @@ export class App implements OnInit {
   public isLoading = true;
   public isDrawerVisible = true; // 3. เปิด Drawer ค้างไว้เลย
 
-  // 1. เพิ่มตัวแปรสำหรับควบคุมสถานะ Sheet
-  public isSheetExpanded = false; 
+  private readonly sheetStates: SheetState[] = ['peek', 'default', 'expanded'];
+  private sheetStateIndex = 1;
+  private readonly dragThreshold = 60;
+  private isDraggingSheet = false;
+  private dragMoved = false;
+  private suppressNextTap = false;
+
+  get sheetState(): SheetState {
+    return this.sheetStates[this.sheetStateIndex];
+  }
+
+  get sheetHeight(): string {
+    switch (this.sheetState) {
+      case 'peek':
+        return 'clamp(18vh, 26vh, 320px)';
+      case 'expanded':
+        return 'min(88vh, calc(100vh - var(--footer-height)))';
+      default:
+        return 'clamp(32vh, 46vh, 520px)';
+    }
+  }
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
@@ -153,30 +174,108 @@ export class App implements OnInit {
     }));
   }
 
-  // 2. เพิ่มฟังก์ชันนี้: สลับความสูง Sheet
-  toggleSheetState(): void {
-    this.isSheetExpanded = !this.isSheetExpanded;
+  cycleSheetState(): void {
+    this.sheetStateIndex = (this.sheetStateIndex + 1) % this.sheetStates.length;
   }
 
-  // 3. เพิ่มฟังก์ชันนี้: รับ Event การปัด (Swipe) บนมือถือ
-  private touchStartY = 0;
+  private gestureStartY: number | null = null;
 
-  onTouchStart(event: TouchEvent): void {
-    this.touchStartY = event.touches[0].clientY;
+  onGestureStart(event: TouchEvent | MouseEvent): void {
+    const point = this.extractClientY(event);
+    if (point === null) return;
+    this.gestureStartY = point;
+    this.isDraggingSheet = true;
+    this.dragMoved = false;
   }
 
-  onTouchEnd(event: TouchEvent): void {
-    const touchEndY = event.changedTouches[0].clientY;
-    const distance = this.touchStartY - touchEndY;
+  @HostListener('document:touchmove', ['$event'])
+  @HostListener('document:mousemove', ['$event'])
+  onGestureMove(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet || this.gestureStartY === null) return;
+    const point = this.extractClientY(event);
+    if (point === null) return;
 
-    // ถ้าปัดขึ้นมากกว่า 50px -> ขยาย
-    if (distance > 50 && !this.isSheetExpanded) {
-      this.isSheetExpanded = true;
+    if (event instanceof TouchEvent) {
+      event.preventDefault();
     }
-    // ถ้าปัดลงมากกว่า 50px -> ย่อ
-    else if (distance < -50 && this.isSheetExpanded) {
-      this.isSheetExpanded = false;
+
+    const distance = this.gestureStartY - point;
+
+    if (distance > this.dragThreshold) {
+      this.moveSheetState('up');
+      this.dragMoved = true;
+      this.gestureStartY = point;
+    } else if (distance < -this.dragThreshold) {
+      this.moveSheetState('down');
+      this.dragMoved = true;
+      this.gestureStartY = point;
     }
+  }
+
+  @HostListener('document:touchend', ['$event'])
+  @HostListener('document:touchcancel', ['$event'])
+  @HostListener('document:mouseup', ['$event'])
+  onGlobalGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+    this.onGestureEnd(event);
+  }
+
+  onGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+
+    const startY = this.gestureStartY;
+    this.isDraggingSheet = false;
+    this.gestureStartY = null;
+
+    const point = this.extractClientY(event);
+    if (point === null || startY === null) {
+      this.finalizeGesture();
+      return;
+    }
+
+    const distance = startY - point;
+
+    if (!this.dragMoved && Math.abs(distance) > this.dragThreshold / 2) {
+      this.moveSheetState(distance > 0 ? 'up' : 'down');
+      this.dragMoved = true;
+    }
+
+    this.finalizeGesture();
+  }
+
+  onSheetHeaderTap(): void {
+    if (this.suppressNextTap) {
+      this.suppressNextTap = false;
+      return;
+    }
+    this.cycleSheetState();
+  }
+
+  private moveSheetState(direction: 'up' | 'down'): void {
+    if (direction === 'up' && this.sheetStateIndex < this.sheetStates.length - 1) {
+      this.sheetStateIndex += 1;
+    } else if (direction === 'down' && this.sheetStateIndex > 0) {
+      this.sheetStateIndex -= 1;
+    }
+    this.suppressNextTap = false;
+  }
+
+  private finalizeGesture(): void {
+    this.suppressNextTap = this.dragMoved;
+    this.dragMoved = false;
+  }
+
+  private extractClientY(event: TouchEvent | MouseEvent): number | null {
+    if ('touches' in event && event.touches.length) {
+      return event.touches[0]?.clientY ?? null;
+    }
+    if ('changedTouches' in event && event.changedTouches.length) {
+      return event.changedTouches[0]?.clientY ?? null;
+    }
+    if (event instanceof MouseEvent) {
+      return event.clientY;
+    }
+    return null;
   }
 
   private prepareBuildingData(data: BuildingData): BuildingData {
