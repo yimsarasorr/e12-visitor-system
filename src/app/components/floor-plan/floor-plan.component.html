@@ -10,6 +10,20 @@
           <span class="floor-indicator__subtitle">Floorplan</span>
         </div>
       </div>
+
+      <div class="floor-dropdown" *ngIf="floorOptions.length">
+        <label class="floor-dropdown__label" for="floor-dropdown">เลือกชั้นอื่น</label>
+        <p-select
+          inputId="floor-dropdown"
+          [options]="floorOptions"
+          [ngModel]="activeFloorValue"
+          (ngModelChange)="onFloorSelectionChange($event)"
+          placeholder="เลือกชั้น"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="floor-dropdown__control"
+        ></p-select>
+      </div>
     </div>
 
     <div class="toolbar-meta">
@@ -42,35 +56,6 @@
           <span>{{ position }}</span>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="floor-selector-card" *ngIf="floors?.length" (click)="$event.stopPropagation()">
-    <div class="selector-header">
-      <div class="selector-eyebrow">เลือกชั้น</div>
-      <div class="selector-active" *ngIf="activeFloorMeta as active">
-        <span class="selector-active-label">กำลังดู</span>
-        <div class="selector-active-floor">
-          <span class="selector-active-number">ชั้น {{ active.floor }}</span>
-          <span class="selector-active-name">{{ active.floorName || 'พื้นที่หลัก' }}</span>
-        </div>
-      </div>
-    </div>
-    <div class="selector-list">
-      <button
-        type="button"
-        class="selector-item"
-        *ngFor="let floor of floors"
-        [class.active]="floor.floor === activeFloorValue"
-        (click)="onFloorChipSelected(floor.floor)"
-      >
-        <div class="selector-item__index">{{ floor.floor }}</div>
-        <div class="selector-item__meta">
-          <span class="selector-item__title">{{ floor.floorName || ('ชั้น ' + floor.floor) }}</span>
-          <span class="selector-item__hint">แตะเพื่อสลับ</span>
-        </div>
-        <i class="pi pi-arrow-right"></i>
-      </button>
     </div>
   </div>
 

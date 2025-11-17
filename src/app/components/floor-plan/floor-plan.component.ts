@@ -18,6 +18,8 @@ import * as THREE from 'three';
 import { ButtonModule } from 'primeng/button';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
 
 import { ThreeSceneService } from '../../services/floorplan/three-scene.service';
@@ -29,7 +31,7 @@ import { JoystickComponent } from '../joystick/joystick.component';
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
-  imports: [CommonModule, ButtonModule, DialogModule, JoystickComponent],
+  imports: [CommonModule, ButtonModule, DialogModule, SelectModule, FormsModule, JoystickComponent],
   providers: [DecimalPipe],
   templateUrl: './floor-plan.component.html',
   styleUrls: ['./floor-plan.component.css'],
@@ -57,9 +59,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   public currentView: 'iso' | 'top' = 'iso';
   public isFullscreen = false;
   public isJoystickVisible = true;
-  public get activeFloorMeta(): any | undefined {
-    return this.floors?.find(floor => floor.floor === this.activeFloorValue);
-  }
+  public floorOptions: { label: string; value: number }[] = [];
 
   private readonly playerPositionDisplaySubject = new BehaviorSubject<string>('');
   public readonly playerPositionDisplay$ = this.playerPositionDisplaySubject.asObservable();
@@ -90,6 +90,10 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['floors']) {
+      this.updateFloorOptions();
+    }
+
     if (!this.isInitialized) return;
 
     if (changes['floorData'] && this.floorData) {
@@ -159,8 +163,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.snapCameraToTarget();
   }
 
-  onFloorChipSelected(floorNumber: number): void {
-    if (floorNumber === this.activeFloorValue) {
+  onFloorSelectionChange(floorNumber: number | null): void {
+    if (floorNumber == null || floorNumber === this.activeFloorValue) {
       return;
     }
     this.floorChange.emit(floorNumber);
@@ -195,6 +199,13 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private clampZoom(value: number): number {
     return Math.min(this.maxCameraZoom, Math.max(this.minCameraZoom, Number(value.toFixed(4))));
+  }
+
+  private updateFloorOptions(): void {
+    this.floorOptions = (this.floors ?? []).map(floor => ({
+      label: floor.floorName || `ชั้น ${floor.floor}`,
+      value: floor.floor
+    }));
   }
 
   private startRenderingLoop(): void {
