@@ -117,30 +117,25 @@
     </div>
   </ng-template>
 
-  <p-drawer
-    [(visible)]="isDrawerVisible"
-    position="bottom"
-    [styleClass]="'access-sheet-drawer sheet-state-' + sheetState"
-    [showCloseIcon]="false"
-    [modal]="false"
-    [appendTo]="'body'"
-    [blockScroll]="false"
-    [dismissible]="false"
-    [baseZIndex]="1100"
-    [ngStyle]="{ height: sheetHeight }"
+  <section
+    *ngIf="isSheetVisible"
+    class="access-bottom-sheet"
+    [ngClass]="'sheet-state-' + sheetState"
+    role="dialog"
+    aria-modal="false"
   >
-    <ng-template pTemplate="header">
-      <div
-        class="bottom-sheet-header"
-        (click)="onSheetHeaderTap()"
-        (touchstart)="onGestureStart($event)"
-        (mousedown)="onGestureStart($event)"
-      >
-        <div class="bottom-sheet-grabber"></div>
-      </div>
-    </ng-template>
-    <app-access-list></app-access-list>
-  </p-drawer>
+    <div
+      class="bottom-sheet-header"
+      (click)="onSheetHeaderTap()"
+      (touchstart)="onGestureStart($event)"
+      (mousedown)="onGestureStart($event)"
+    >
+      <div class="bottom-sheet-grabber"></div>
+    </div>
+    <div class="bottom-sheet-content">
+      <app-access-list></app-access-list>
+    </div>
+  </section>
 
   <footer class="vms-footer">
     <button pButton pRipple type="button" class="p-button-text footer-button active">

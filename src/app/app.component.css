@@ -490,62 +490,55 @@
   }
 }
 
-/* --- Bottom Sheet Styles (ฉบับอัปเกรด) --- */
+/* --- Bottom Sheet Styles --- */
 
-:host ::ng-deep .p-drawer.access-sheet-drawer,
-:host ::ng-deep body .p-drawer.access-sheet-drawer {
-  bottom: var(--footer-height) !important;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.15);
-  transition: height var(--sheet-transition) !important;
-  background-color: #fff;
-  border: none;
-  width: 100%;
-  max-width: 100%;
-  position: fixed !important;
+.access-bottom-sheet {
+  position: fixed;
   left: 0;
   right: 0;
+  bottom: var(--footer-height);
   margin: 0 auto;
-  pointer-events: none;
-  z-index: 1100;
-}
-
-:host ::ng-deep .p-drawer.access-sheet-drawer.sheet-state-peek {
-  height: clamp(18vh, 26vh, 320px) !important;
-}
-
-:host ::ng-deep .p-drawer.access-sheet-drawer.sheet-state-default {
-  height: clamp(32vh, 46vh, 520px) !important;
-}
-
-:host ::ng-deep .p-drawer.access-sheet-drawer.sheet-state-expanded {
-  height: min(88vh, calc(100vh - var(--footer-height))) !important;
-}
-
-:host ::ng-deep .access-sheet-drawer .p-drawer-content,
-:host ::ng-deep .access-sheet-drawer .p-drawer-header {
-  padding: 0;
-  overflow: hidden;
-  pointer-events: auto;
-}
-
-:host ::ng-deep .access-sheet-drawer .p-drawer-header {
-  padding: 0;
-  border-bottom: 1px solid #f1f5f9;
+  width: min(100%, 920px);
+  max-width: calc(100% - 1.5rem);
   background: #fff;
   border-radius: 24px 24px 0 0;
+  box-shadow: 0 -20px 45px rgba(15, 23, 42, 0.22);
+  transition: height var(--sheet-transition), transform var(--sheet-transition);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1600;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-/* Header ที่จับต้องได้ */
+.access-bottom-sheet.sheet-state-peek {
+  height: 3.5rem;
+}
+
+.access-bottom-sheet.sheet-state-default {
+  height: clamp(32vh, 46vh, 520px);
+}
+
+.access-bottom-sheet.sheet-state-expanded {
+  height: min(88vh, calc(100vh - var(--footer-height)));
+}
+
+.access-bottom-sheet.sheet-state-peek .bottom-sheet-content {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
 .bottom-sheet-header {
   width: 100%;
-  padding: 0.85rem 0 1.1rem;
+  padding: 0.65rem 0 0.9rem;
   display: flex;
   justify-content: center;
   cursor: grab;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  background: #fff;
 }
 
 .bottom-sheet-header:active {
@@ -553,13 +546,25 @@
 }
 
 .bottom-sheet-grabber {
-  width: 48px;
+  width: 56px;
   height: 6px;
   background-color: #cbd5e1;
-  border-radius: 10px;
+  border-radius: 999px;
   transition: background-color 0.2s ease;
 }
 
 .bottom-sheet-header:active .bottom-sheet-grabber {
   background-color: #94a3b8;
+}
+
+.bottom-sheet-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-sheet-content app-access-list {
+  flex: 1 1 auto;
+  display: block;
 }
