@@ -22,6 +22,8 @@ import { AuthService, RolePermission } from './services/auth.service';
 import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
 import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
 
+type SheetState = 'peek' | 'default' | 'expanded';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -53,8 +55,12 @@ export class App implements OnInit {
   public isLoading = true;
   public isDrawerVisible = true; // 3. เปิด Drawer ค้างไว้เลย
 
-  // 1. เพิ่มตัวแปรสำหรับควบคุมสถานะ Sheet
-  public isSheetExpanded = false; 
+  private readonly sheetStates: SheetState[] = ['peek', 'default', 'expanded'];
+  private sheetStateIndex = 1;
+
+  get sheetState(): SheetState {
+    return this.sheetStates[this.sheetStateIndex];
+  }
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
@@ -153,30 +159,55 @@ export class App implements OnInit {
     }));
   }
 
-  // 2. เพิ่มฟังก์ชันนี้: สลับความสูง Sheet
-  toggleSheetState(): void {
-    this.isSheetExpanded = !this.isSheetExpanded;
+  cycleSheetState(): void {
+    this.sheetStateIndex = (this.sheetStateIndex + 1) % this.sheetStates.length;
   }
 
-  // 3. เพิ่มฟังก์ชันนี้: รับ Event การปัด (Swipe) บนมือถือ
-  private touchStartY = 0;
+  private gestureStartY: number | null = null;
 
-  onTouchStart(event: TouchEvent): void {
-    this.touchStartY = event.touches[0].clientY;
+  onGestureStart(event: TouchEvent | MouseEvent): void {
+    const point = this.extractClientY(event);
+    if (point === null) return;
+    this.gestureStartY = point;
   }
 
-  onTouchEnd(event: TouchEvent): void {
-    const touchEndY = event.changedTouches[0].clientY;
-    const distance = this.touchStartY - touchEndY;
+  onGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (this.gestureStartY === null) return;
 
-    // ถ้าปัดขึ้นมากกว่า 50px -> ขยาย
-    if (distance > 50 && !this.isSheetExpanded) {
-      this.isSheetExpanded = true;
+    const startY = this.gestureStartY;
+    this.gestureStartY = null;
+
+    const point = this.extractClientY(event);
+    if (point === null) return;
+
+    const distance = startY - point;
+
+    if (distance > 50) {
+      this.moveSheetState('up');
+    } else if (distance < -50) {
+      this.moveSheetState('down');
     }
-    // ถ้าปัดลงมากกว่า 50px -> ย่อ
-    else if (distance < -50 && this.isSheetExpanded) {
-      this.isSheetExpanded = false;
+  }
+
+  private moveSheetState(direction: 'up' | 'down'): void {
+    if (direction === 'up' && this.sheetStateIndex < this.sheetStates.length - 1) {
+      this.sheetStateIndex += 1;
+    } else if (direction === 'down' && this.sheetStateIndex > 0) {
+      this.sheetStateIndex -= 1;
     }
+  }
+
+  private extractClientY(event: TouchEvent | MouseEvent): number | null {
+    if ('touches' in event && event.touches.length) {
+      return event.touches[0]?.clientY ?? null;
+    }
+    if ('changedTouches' in event && event.changedTouches.length) {
+      return event.changedTouches[0]?.clientY ?? null;
+    }
+    if (event instanceof MouseEvent) {
+      return event.clientY;
+    }
+    return null;
   }
 
   private prepareBuildingData(data: BuildingData): BuildingData {
