@@ -3,6 +3,12 @@
   color: #0f172a;
 }
 
+:host,
+:host ::ng-deep body {
+  --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
+  --sheet-transition: 0.35s cubic-bezier(0.4, 0.15, 0.1, 0.99);
+}
+
 .vms-layout {
   display: flex;
   flex-direction: column;
@@ -486,12 +492,8 @@
 
 /* --- Bottom Sheet Styles (ฉบับอัปเกรด) --- */
 
-:host {
-  --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
-  --sheet-transition: 0.35s cubic-bezier(0.4, 0.15, 0.1, 0.99);
-}
-
-:host ::ng-deep .p-drawer.access-sheet-drawer {
+:host ::ng-deep .p-drawer.access-sheet-drawer,
+:host ::ng-deep body .p-drawer.access-sheet-drawer {
   bottom: var(--footer-height) !important;
   border-radius: 24px 24px 0 0;
   box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.15);
@@ -500,6 +502,12 @@
   border: none;
   width: 100%;
   max-width: 100%;
+  position: fixed !important;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  pointer-events: none;
+  z-index: 1100;
 }
 
 :host ::ng-deep .p-drawer.access-sheet-drawer.sheet-state-peek {
@@ -514,9 +522,11 @@
   height: min(88vh, calc(100vh - var(--footer-height))) !important;
 }
 
-:host ::ng-deep .access-sheet-drawer .p-drawer-content {
+:host ::ng-deep .access-sheet-drawer .p-drawer-content,
+:host ::ng-deep .access-sheet-drawer .p-drawer-header {
   padding: 0;
   overflow: hidden;
+  pointer-events: auto;
 }
 
 :host ::ng-deep .access-sheet-drawer .p-drawer-header {

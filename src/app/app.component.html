@@ -123,6 +123,10 @@
     [styleClass]="'access-sheet-drawer sheet-state-' + sheetState"
     [showCloseIcon]="false"
     [modal]="false"
+    [appendTo]="'body'"
+    [blockScroll]="false"
+    [dismissible]="false"
+    [baseZIndex]="1100"
     [ngStyle]="{ height: sheetHeight }"
   >
     <ng-template pTemplate="header">

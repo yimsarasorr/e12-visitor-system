@@ -56,6 +56,79 @@ canvas {
   pointer-events: auto;
 }
 
+.camera-control-stack {
+  position: absolute;
+  inset-inline-end: clamp(12px, 3vw, 28px);
+  inset-block-end: clamp(12px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.85rem;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.camera-control-stack > * {
+  pointer-events: auto;
+}
+
+:host ::ng-deep .control-button.p-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.15);
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+:host ::ng-deep .control-button.p-button:hover:not(.p-disabled) {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+:host ::ng-deep .control-button.joystick-toggle.active {
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  color: #fff;
+  border-color: transparent;
+}
+
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.18);
+}
+
+.zoom-divider {
+  width: 60%;
+  height: 1px;
+  align-self: center;
+  background: rgba(148, 163, 184, 0.6);
+}
+
+:host ::ng-deep .zoom-controls .p-button.zoom-button {
+  border-radius: 0;
+  width: 60px;
+  height: 48px;
+  background: transparent;
+  color: #0f172a;
+  border: none;
+}
+
+:host ::ng-deep .zoom-controls .p-button.zoom-button:hover:not(.p-disabled) {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+:host ::ng-deep .zoom-controls .p-button.p-disabled {
+  opacity: 0.45;
+}
+
 .toolbar-meta {
   display: flex;
   flex-direction: column;

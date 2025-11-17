@@ -43,7 +43,41 @@
     </div>
   </div>
 
-  <app-joystick></app-joystick>
+  <div class="camera-control-stack" (click)="$event.stopPropagation()">
+    <button
+      pButton
+      type="button"
+      class="control-button joystick-toggle"
+      icon="pi pi-gamepad"
+      [class.active]="isJoystickVisible"
+      (click)="toggleJoystickVisibility()"
+      [attr.aria-pressed]="isJoystickVisible"
+      aria-label="สลับการแสดงจอยสติ๊ก"
+    ></button>
+    <div class="zoom-controls">
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-plus"
+        (click)="adjustCameraZoom('in')"
+        [disabled]="!canZoomIn"
+        aria-label="ซูมเข้า"
+      ></button>
+      <span class="zoom-divider"></span>
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-minus"
+        (click)="adjustCameraZoom('out')"
+        [disabled]="!canZoomOut"
+        aria-label="ซูมออก"
+      ></button>
+    </div>
+  </div>
+
+  <app-joystick *ngIf="isJoystickVisible"></app-joystick>
 </div>
 
 <p-dialog
