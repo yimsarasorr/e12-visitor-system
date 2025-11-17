@@ -14,7 +14,15 @@
         <button pButton pRipple type="button" class="p-button-rounded p-button-text header-action">
           <i class="pi pi-bell"></i>
         </button>
-        <p-chip label="Guest" icon="pi pi-user" class="header-user-chip"></p-chip>
+        <p-select 
+          [options]="(availableRoles$ | async) ?? []"
+          optionLabel="role"
+          optionValue="role"
+          [(ngModel)]="selectedRole"
+          (onChange)="onRoleChange($event.value)"
+          styleClass="role-selector"
+          aria-label="เลือก Role ผู้ใช้งาน"
+        ></p-select>
       </div>
     </ng-template>
   </p-toolbar>

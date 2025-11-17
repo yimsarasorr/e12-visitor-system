@@ -158,15 +158,16 @@ export class FloorplanBuilderService {
   }
 
   /**
-   * อัปเดต Material ของประตูตาม Access Level
+   * (แก้ไข) อัปเดต Material ของประตูตาม "Allow List" (string[])
    */
-  public updateDoorMaterials(accessLevel: number): void {
+  public updateDoorMaterials(allowList: string[]): void { // (รับ string[] ไม่ใช่ number)
     this.doorMeshes.forEach(door => {
-      const requiredLevel = door.userData['data'].accessLevel;
-      if (requiredLevel === -1 || accessLevel < requiredLevel) {
-        door.material = this.lockedDoorMaterial;
-      } else {
+      const doorId = door.userData['data'].id;
+      // (แก้ไข Logic)
+      if (allowList.includes(doorId)) {
         door.material = this.unlockedDoorMaterial;
+      } else {
+        door.material = this.lockedDoorMaterial;
       }
     });
   }

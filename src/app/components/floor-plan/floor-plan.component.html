@@ -49,8 +49,7 @@
 <p-dialog
   header="รายละเอียดพื้นที่"
   [(visible)]="detailDialogVisible"
-  (onHide)="interaction.closeDetail()"
-  [modal]="true"
+  (onHide)="onDialogHide()" [modal]="true"
   appendTo="body"
   [style]="{ width: '48vw', 'max-width': '480px' }"
   [breakpoints]="{ '1200px': '60vw', '960px': '70vw', '640px': '92vw' }"
@@ -70,18 +69,16 @@
       <div class="detail-section" *ngSwitchCase="'door'">
         <h4>สิทธิ์การเข้าใช้งาน</h4>
         <p>
-          <strong>ระดับที่ต้องการ:</strong>
-          {{ selected.data.accessLevel }}
+          <strong>ID ประตู:</strong>
+          {{ selected.data.id }}
         </p>
         <p>
-          <strong>ระดับของคุณ:</strong>
-          {{ interaction.currentUserAccessLevel$ | async }}
         </p>
         <p>
           <strong>สถานะ:</strong>
-          <ng-container *ngIf="interaction.currentUserAccessLevel$ | async as currentLevel">
-            <span [ngClass]="currentLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
-              {{ currentLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
+          <ng-container *ngIf="interaction.permissionList$ | async as list">
+            <span [ngClass]="list.includes(selected.data.id) ? 'status-unlocked' : 'status-locked'">
+              {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
             </span>
           </ng-container>
         </p>

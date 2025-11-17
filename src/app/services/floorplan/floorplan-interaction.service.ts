@@ -23,9 +23,8 @@ export class FloorplanInteractionService {
   private floorData: any;
   private raycaster = new THREE.Raycaster();
 
-  // --- State Management ---
-  // ใช้ BehaviorSubject เพื่อให้ Component (HTML) สามารถ subscribe ค่าไปแสดงผลได้
-  public readonly currentUserAccessLevel$ = new BehaviorSubject<number>(0);
+  // --- State Management (แก้ไข) ---
+  public readonly permissionList$ = new BehaviorSubject<string[]>([]); // <--- ตัวใหม่
   public readonly currentZoneId$ = new BehaviorSubject<string | null>(null);
   public readonly isDetailDialogVisible$ = new BehaviorSubject<boolean>(false);
   public readonly selectedObject$ = new BehaviorSubject<{ type: string, data: any } | null>(null);
@@ -35,17 +34,17 @@ export class FloorplanInteractionService {
    */
   public initialize(floorData: any): void {
     this.floorData = floorData;
-    this.floorBuilder.updateDoorMaterials(this.currentUserAccessLevel$.value);
+    this.floorBuilder.updateDoorMaterials(this.permissionList$.value); // <--- แก้ไข
   }
 
   /**
-   * จำลองการยืนยันตัวตน
+   * (แทนที่) simulateAuthentication ด้วย setPermissionList
    */
-  public simulateAuthentication(level: number): void {
-    this.currentUserAccessLevel$.next(level);
-    this.floorBuilder.updateDoorMaterials(level);
-    
-    // ถ้า Dialog เปิดอยู่ ให้ update status
+  public setPermissionList(allowList: string[]): void {
+    this.permissionList$.next(allowList);
+    this.floorBuilder.updateDoorMaterials(allowList); // <--- นี่คือที่แก้ Error 4
+
+    // อัปเดต Dialog ถ้าเปิดอยู่
     const currentSelection = this.selectedObject$.value;
     if (this.isDetailDialogVisible$.value && currentSelection?.type === 'door') {
       this.selectedObject$.next(currentSelection); 
@@ -57,10 +56,8 @@ export class FloorplanInteractionService {
    */
   public checkPlayerZone(): void {
     if (!this.playerControls.player || !this.floorData.zones) return;
-    
     const playerPos = this.playerControls.player.position;
     let newZoneId: string | null = null;
-  
     for (const zone of this.floorData.zones) {
       if (zone.rooms) {
         for (const room of zone.rooms) {
@@ -81,7 +78,6 @@ export class FloorplanInteractionService {
       }
       if (newZoneId) break;
     }
-
     if (this.currentZoneId$.value !== newZoneId) {
       this.ngZone.run(() => {
         this.currentZoneId$.next(newZoneId);
@@ -96,20 +92,16 @@ export class FloorplanInteractionService {
     if (event.target !== this.threeScene.renderer.domElement || !this.threeScene.controls.enabled) {
       return;
     }
-    
     const mouse = new THREE.Vector2();
     const rect = this.threeScene.renderer.domElement.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
     this.raycaster.setFromCamera(mouse, this.threeScene.camera);
-    
     const clickableObjects = [
       ...this.floorBuilder.getFloorMeshes(),
       ...this.floorBuilder.getDoorMeshes(),
       ...this.floorBuilder.getObjectMeshes()
     ];
-    
     const intersects = this.raycaster.intersectObjects(clickableObjects);
     if (intersects.length > 0) {
       const clickedObj = intersects[0].object;
@@ -122,9 +114,7 @@ export class FloorplanInteractionService {
     }
   }
 
-  // (นี่คือ 3 ฟังก์ชันที่ error หายไป)
   private openDetail(type: string, data: any, cameraLookAtTarget: THREE.Vector3): void {
-    // Pan camera to target
     if (data.center) {
       cameraLookAtTarget.set(data.center.x, 0, data.center.y);
     } else if (data.boundary) {
@@ -134,16 +124,13 @@ export class FloorplanInteractionService {
         (data.boundary.min.y + data.boundary.max.y) / 2
       );
     }
-    
     this.selectedObject$.next({ type, data });
     this.isDetailDialogVisible$.next(true);
   }
-
   public closeDetail(): void {
     this.isDetailDialogVisible$.next(false);
     this.selectedObject$.next(null);
   }
-  
   private containsPoint(boundary: Boundary, position: THREE.Vector3): boolean {
     return (
       position.x >= boundary.min.x &&

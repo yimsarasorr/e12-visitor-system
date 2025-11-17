@@ -68,9 +68,9 @@ export class PlayerControlsService {
   }
 
   /**
-   * อัปเดตตำแหน่ง Player ในทุก Frame
+   * (แก้ไข) อัปเดตตำแหน่ง Player ในทุก Frame
    */
-  public update(accessLevel: number): void {
+  public update(allowList: string[]): void { // (เปลี่ยน accessLevel เป็น allowList)
     if (!this.player || !this.threeSceneService.camera) return;
 
     // 1. คำนวณทิศทาง
@@ -88,17 +88,17 @@ export class PlayerControlsService {
       finalMoveVector.normalize().multiplyScalar(this.playerSpeed);
       const newPosition = this.player.position.clone().add(finalMoveVector);
 
-      // 3. เช็ค Collision
-      if (!this.checkCollision(newPosition, accessLevel)) {
+      // 3. เช็ค Collision (ส่ง allowList เข้าไป)
+      if (!this.checkCollision(newPosition, allowList)) {
         this.player.position.copy(newPosition);
       }
     }
   }
 
   /**
-   * เช็คการชนกับกำแพง, ประตู, และวัตถุ
+   * (แก้ไข) เช็คการชนกับกำแพง, ประตู, และวัตถุ
    */
-  private checkCollision(newPosition: THREE.Vector3, accessLevel: number): boolean {
+  private checkCollision(newPosition: THREE.Vector3, allowList: string[]): boolean { // (เปลี่ยน accessLevel เป็น allowList)
     const playerBox = new THREE.Box3().setFromCenterAndSize(
       newPosition, new THREE.Vector3(this.playerSize, this.playerSize * 2, this.playerSize)
     );
@@ -109,9 +109,11 @@ export class PlayerControlsService {
     for (const obj of this.floorplanBuilder.getObjectMeshes()) {
       if (playerBox.intersectsBox(new THREE.Box3().setFromObject(obj))) return true;
     }
+    // (แก้ไข Logic การเช็คประตู)
     for (const door of this.floorplanBuilder.getDoorMeshes()) {
-      const requiredLevel = door.userData['data'].accessLevel;
-      if ((requiredLevel === -1 || accessLevel < requiredLevel) && playerBox.intersectsBox(new THREE.Box3().setFromObject(door))) {
+      const doorId = door.userData['data'].id;
+      // ถ้า ID ประตู "ไม่" อยู่ใน Allow List และ Player ชน
+      if (!allowList.includes(doorId) && playerBox.intersectsBox(new THREE.Box3().setFromObject(door))) {
         return true;
       }
     }

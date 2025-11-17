@@ -125,6 +125,16 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
   }
 
+  public onDialogHide(): void {
+    // 1. บอก Service ให้ปิด Dialog (อัปเดต State)
+    this.interaction.closeDetail();
+
+    // 2. สั่งให้เป้าหมายกล้องกลับไปหาตัวละครทันที
+    if (this.playerControls.player) {
+      this.cameraLookAtTarget.copy(this.playerControls.player.position);
+    }
+  }
+
   ngOnDestroy(): void {
     this.isInitialized = false;
     this.threeScene.destroy();
@@ -145,7 +155,8 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private startRenderingLoop(): void {
     this.threeScene.startRenderingLoop(() => {
-      this.playerControls.update(this.interaction.currentUserAccessLevel$.value);
+      // (แก้ไข) ส่ง allowList เข้าไป
+      this.playerControls.update(this.interaction.permissionList$.value); 
       this.interaction.checkPlayerZone();
       this.updateCameraPosition();
       this.updatePlayerPositionDisplay();
@@ -271,6 +282,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.playerControls.player.position.set(0, this.playerControls.playerSize, 0);
       this.snapCameraToTarget();
     }
-    this.interaction.simulateAuthentication(this.interaction.currentUserAccessLevel$.value);
+    // (แก้ไข) สั่งให้ Service อัปเดตสิทธิ์ (ซึ่งจะไปเปลี่ยนสีประตู)
+    this.interaction.setPermissionList(this.interaction.permissionList$.value); 
   }
 }
