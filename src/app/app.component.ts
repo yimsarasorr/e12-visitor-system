@@ -12,7 +12,6 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { ChipModule } from 'primeng/chip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { DrawerModule } from 'primeng/drawer';
 
 import { BuildingData, BuildingDataService } from './services/building-data.service';
 import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
@@ -41,7 +40,6 @@ type SheetState = 'peek' | 'default' | 'expanded';
     InputGroupAddonModule,
     ChipModule,
     ProgressSpinnerModule,
-    DrawerModule,
     AccessListComponent // 2. เพิ่ม Component ใหม่
   ],
   templateUrl: './app.component.html',
@@ -53,10 +51,10 @@ export class App implements OnInit {
   public lastActiveFloor: number | null = null;
   public selectedFloorValue: number | null = null;
   public isLoading = true;
-  public isDrawerVisible = true; // 3. เปิด Drawer ค้างไว้เลย
+  public isSheetVisible = true;
 
   private readonly sheetStates: SheetState[] = ['peek', 'default', 'expanded'];
-  private sheetStateIndex = 1;
+  private sheetStateIndex = 0;
   private readonly dragThreshold = 60;
   private isDraggingSheet = false;
   private dragMoved = false;
@@ -64,17 +62,6 @@ export class App implements OnInit {
 
   get sheetState(): SheetState {
     return this.sheetStates[this.sheetStateIndex];
-  }
-
-  get sheetHeight(): string {
-    switch (this.sheetState) {
-      case 'peek':
-        return 'clamp(18vh, 26vh, 320px)';
-      case 'expanded':
-        return 'min(88vh, calc(100vh - var(--footer-height)))';
-      default:
-        return 'clamp(32vh, 46vh, 520px)';
-    }
   }
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
@@ -144,17 +131,11 @@ export class App implements OnInit {
     this.selectedFloorValue = floorNumber;
   }
 
-  onFloorDropdownChange(floorValue: number | string | null): void {
-    if (floorValue === null || floorValue === undefined || floorValue === '') {
-      this.resetToBuildingOverview();
+  onFloorPlanFloorChange(floorNumber: number): void {
+    if (typeof floorNumber !== 'number' || Number.isNaN(floorNumber)) {
       return;
     }
-
-    const parsed = typeof floorValue === 'number' ? floorValue : Number(floorValue);
-    if (Number.isNaN(parsed)) {
-      return;
-    }
-    this.onFloorSelected(parsed);
+    this.onFloorSelected(floorNumber);
   }
 
   resetToBuildingOverview(): void {
@@ -165,13 +146,6 @@ export class App implements OnInit {
   get selectedFloor(): any | null {
     if (this.selectedFloorIndex === null) return null;
     return this.buildingData.floors[this.selectedFloorIndex] ?? null;
-  }
-
-  get floorOptions(): { label: string; value: number }[] {
-    return (this.buildingData?.floors ?? []).map((floor: any) => ({
-      label: floor.floorName ?? `ชั้น ${floor.floor}`,
-      value: floor.floor
-    }));
   }
 
   cycleSheetState(): void {
