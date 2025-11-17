@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
@@ -57,9 +57,24 @@ export class App implements OnInit {
 
   private readonly sheetStates: SheetState[] = ['peek', 'default', 'expanded'];
   private sheetStateIndex = 1;
+  private readonly dragThreshold = 60;
+  private isDraggingSheet = false;
+  private dragMoved = false;
+  private suppressNextTap = false;
 
   get sheetState(): SheetState {
     return this.sheetStates[this.sheetStateIndex];
+  }
+
+  get sheetHeight(): string {
+    switch (this.sheetState) {
+      case 'peek':
+        return 'clamp(18vh, 26vh, 320px)';
+      case 'expanded':
+        return 'min(88vh, calc(100vh - var(--footer-height)))';
+      default:
+        return 'clamp(32vh, 46vh, 520px)';
+    }
   }
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
@@ -169,24 +184,71 @@ export class App implements OnInit {
     const point = this.extractClientY(event);
     if (point === null) return;
     this.gestureStartY = point;
+    this.isDraggingSheet = true;
+    this.dragMoved = false;
   }
 
-  onGestureEnd(event: TouchEvent | MouseEvent): void {
-    if (this.gestureStartY === null) return;
-
-    const startY = this.gestureStartY;
-    this.gestureStartY = null;
-
+  @HostListener('document:touchmove', ['$event'])
+  @HostListener('document:mousemove', ['$event'])
+  onGestureMove(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet || this.gestureStartY === null) return;
     const point = this.extractClientY(event);
     if (point === null) return;
 
+    if (event instanceof TouchEvent) {
+      event.preventDefault();
+    }
+
+    const distance = this.gestureStartY - point;
+
+    if (distance > this.dragThreshold) {
+      this.moveSheetState('up');
+      this.dragMoved = true;
+      this.gestureStartY = point;
+    } else if (distance < -this.dragThreshold) {
+      this.moveSheetState('down');
+      this.dragMoved = true;
+      this.gestureStartY = point;
+    }
+  }
+
+  @HostListener('document:touchend', ['$event'])
+  @HostListener('document:touchcancel', ['$event'])
+  @HostListener('document:mouseup', ['$event'])
+  onGlobalGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+    this.onGestureEnd(event);
+  }
+
+  onGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+
+    const startY = this.gestureStartY;
+    this.isDraggingSheet = false;
+    this.gestureStartY = null;
+
+    const point = this.extractClientY(event);
+    if (point === null || startY === null) {
+      this.finalizeGesture();
+      return;
+    }
+
     const distance = startY - point;
 
-    if (distance > 50) {
-      this.moveSheetState('up');
-    } else if (distance < -50) {
-      this.moveSheetState('down');
+    if (!this.dragMoved && Math.abs(distance) > this.dragThreshold / 2) {
+      this.moveSheetState(distance > 0 ? 'up' : 'down');
+      this.dragMoved = true;
     }
+
+    this.finalizeGesture();
+  }
+
+  onSheetHeaderTap(): void {
+    if (this.suppressNextTap) {
+      this.suppressNextTap = false;
+      return;
+    }
+    this.cycleSheetState();
   }
 
   private moveSheetState(direction: 'up' | 'down'): void {
@@ -195,6 +257,12 @@ export class App implements OnInit {
     } else if (direction === 'down' && this.sheetStateIndex > 0) {
       this.sheetStateIndex -= 1;
     }
+    this.suppressNextTap = false;
+  }
+
+  private finalizeGesture(): void {
+    this.suppressNextTap = this.dragMoved;
+    this.dragMoved = false;
   }
 
   private extractClientY(event: TouchEvent | MouseEvent): number | null {

@@ -123,15 +123,14 @@
     [styleClass]="'access-sheet-drawer sheet-state-' + sheetState"
     [showCloseIcon]="false"
     [modal]="false"
+    [ngStyle]="{ height: sheetHeight }"
   >
     <ng-template pTemplate="header">
       <div
         class="bottom-sheet-header"
-        (click)="cycleSheetState()"
+        (click)="onSheetHeaderTap()"
         (touchstart)="onGestureStart($event)"
-        (touchend)="onGestureEnd($event)"
         (mousedown)="onGestureStart($event)"
-        (mouseup)="onGestureEnd($event)"
       >
         <div class="bottom-sheet-grabber"></div>
       </div>
