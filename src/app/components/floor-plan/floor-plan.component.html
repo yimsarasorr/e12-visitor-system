@@ -3,16 +3,15 @@
 
   <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
     <div class="floor-toolbar-left" *ngIf="floorData">
-      <div class="floor-indicator">
+      <!-- <div class="floor-indicator">
         <span class="floor-indicator__number">{{ floorData.floor }}</span>
         <div class="floor-indicator__label">
           <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
           <span class="floor-indicator__subtitle">Floorplan</span>
         </div>
-      </div>
+      </div> -->
 
       <div class="floor-dropdown" *ngIf="floorOptions.length">
-        <label class="floor-dropdown__label" for="floor-dropdown">เลือกชั้นอื่น</label>
         <p-select
           inputId="floor-dropdown"
           [options]="floorOptions"

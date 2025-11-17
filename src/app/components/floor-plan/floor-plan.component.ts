@@ -73,6 +73,15 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   private readonly maxCameraZoom = 1.4;
   private readonly cameraZoomStep = 0.15;
 
+  // 1. (เพิ่ม) ค่าคงที่ระยะห่างกล้อง (เพื่อให้เห็นครบทั้งตึก)
+  private readonly CAMERA_DISTANCE_FACTOR = 6.0;
+
+  // 2. (แก้ไข) ตัวแปรสำหรับ Real Zoom
+  private currentZoomLevel = 1.0; 
+  private readonly minZoomLevel = 0.5;
+  private readonly maxZoomLevel = 4.0;
+  private readonly zoomStep = 0.2;
+
   constructor() {
     this.subscriptions.add(
       this.interaction.currentZoneId$.subscribe(zoneId => {
@@ -187,14 +196,14 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.isJoystickVisible = !this.isJoystickVisible;
   }
 
+  // 3. (แก้ไข) ฟังก์ชัน Zoom ให้เป็นการปรับ camera.zoom
   adjustCameraZoom(direction: 'in' | 'out'): void {
-    const delta = direction === 'in' ? -this.cameraZoomStep : this.cameraZoomStep;
-    const nextZoom = this.clampZoom(this.cameraZoom + delta);
-    if (nextZoom === this.cameraZoom) {
-      return;
-    }
-    this.cameraZoom = nextZoom;
-    this.snapCameraToTarget();
+    const delta = direction === 'in' ? this.zoomStep : -this.zoomStep;
+    const nextZoom = Math.min(this.maxZoomLevel, Math.max(this.minZoomLevel, this.currentZoomLevel + delta));
+    if (nextZoom === this.currentZoomLevel) return;
+    this.currentZoomLevel = nextZoom;
+    this.threeScene.camera.zoom = this.currentZoomLevel;
+    this.threeScene.camera.updateProjectionMatrix();
   }
 
   private clampZoom(value: number): number {
@@ -340,12 +349,14 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.interaction.setPermissionList(this.interaction.permissionList$.value);
   }
 
+  // 4. (แก้ไข) ใช้ระยะห่างคงที่ (6.0) ไม่เปลี่ยนตาม Zoom
   private getIsoCameraOffset(): THREE.Vector3 {
     const baseOffset = new THREE.Vector3(-5.5, 5.2, -5.5);
-    return baseOffset.multiplyScalar(this.cameraZoom);
+    return baseOffset.multiplyScalar(this.CAMERA_DISTANCE_FACTOR); 
   }
 
+  // 5. (แก้ไข) ใช้ระยะห่างคงที่ (6.0)
   private getTopCameraHeight(): number {
-    return 28 * this.cameraZoom;
+    return 28 * this.CAMERA_DISTANCE_FACTOR;
   }
 }
