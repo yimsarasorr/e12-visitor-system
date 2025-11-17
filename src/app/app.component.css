@@ -336,11 +336,12 @@
   bottom: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  background: rgba(15, 23, 42, 0.96);
+  /* เปลี่ยนจาก rgba(...) เป็นสีทึบ */
+  background: #0f172a;
   color: #e2e8f0;
   padding: 0.5rem 1rem env(safe-area-inset-bottom, 1rem);
   gap: 0.35rem;
-  z-index: 90;
+  z-index: 2000;
 }
 
 .footer-button {
@@ -481,4 +482,55 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* --- Bottom Sheet Styles (ฉบับอัปเกรด) --- */
+
+:host {
+  --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+/* สถานะปกติ (Nest 40%) */
+:host ::ng-deep .p-drawer.access-sheet-drawer {
+  height: 40vh !important;
+  bottom: var(--footer-height) !important;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+  transition: height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  background-color: #fff;
+  border: none;
+}
+
+/* สถานะขยาย (Expand 85%) */
+:host ::ng-deep .p-drawer.access-sheet-drawer.sheet-expanded {
+  height: 85vh !important;
+}
+
+:host ::ng-deep .access-sheet-drawer .p-drawer-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+:host ::ng-deep .access-sheet-drawer .p-drawer-header {
+  padding: 0;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+}
+
+/* Header ที่จับต้องได้ */
+.bottom-sheet-header {
+  width: 100%;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bottom-sheet-grabber {
+  width: 48px;
+  height: 6px;
+  background-color: #cbd5e1;
+  border-radius: 10px;
 }

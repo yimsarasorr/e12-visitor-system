@@ -12,6 +12,7 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { ChipModule } from 'primeng/chip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { DrawerModule } from 'primeng/drawer';
 
 import { BuildingData, BuildingDataService } from './services/building-data.service';
 import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
@@ -19,6 +20,7 @@ import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
 // 2. Import Services ที่เราจะใช้
 import { AuthService, RolePermission } from './services/auth.service';
 import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
+import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
 
 @Component({
   selector: 'app-root',
@@ -36,7 +38,9 @@ import { FloorplanInteractionService } from './services/floorplan/floorplan-inte
     InputGroupModule,
     InputGroupAddonModule,
     ChipModule,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    DrawerModule,
+    AccessListComponent // 2. เพิ่ม Component ใหม่
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
@@ -47,6 +51,10 @@ export class App implements OnInit {
   public lastActiveFloor: number | null = null;
   public selectedFloorValue: number | null = null;
   public isLoading = true;
+  public isDrawerVisible = true; // 3. เปิด Drawer ค้างไว้เลย
+
+  // 1. เพิ่มตัวแปรสำหรับควบคุมสถานะ Sheet
+  public isSheetExpanded = false; 
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
@@ -143,6 +151,32 @@ export class App implements OnInit {
       label: floor.floorName ?? `ชั้น ${floor.floor}`,
       value: floor.floor
     }));
+  }
+
+  // 2. เพิ่มฟังก์ชันนี้: สลับความสูง Sheet
+  toggleSheetState(): void {
+    this.isSheetExpanded = !this.isSheetExpanded;
+  }
+
+  // 3. เพิ่มฟังก์ชันนี้: รับ Event การปัด (Swipe) บนมือถือ
+  private touchStartY = 0;
+
+  onTouchStart(event: TouchEvent): void {
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    const touchEndY = event.changedTouches[0].clientY;
+    const distance = this.touchStartY - touchEndY;
+
+    // ถ้าปัดขึ้นมากกว่า 50px -> ขยาย
+    if (distance > 50 && !this.isSheetExpanded) {
+      this.isSheetExpanded = true;
+    }
+    // ถ้าปัดลงมากกว่า 50px -> ย่อ
+    else if (distance < -50 && this.isSheetExpanded) {
+      this.isSheetExpanded = false;
+    }
   }
 
   private prepareBuildingData(data: BuildingData): BuildingData {

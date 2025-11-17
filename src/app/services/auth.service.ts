@@ -7,6 +7,13 @@ export interface RolePermission {
   role: string;
 }
 
+export interface Asset {
+  id: string;
+  name: string;
+  type: string;
+  floor_number: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })

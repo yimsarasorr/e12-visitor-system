@@ -111,6 +111,32 @@
     </ng-template>
   </main>
 
+  <ng-template #floorWorkspace>
+    <div class="panel panel-right floor-plan-content">
+      <!-- ...existing code... -->
+    </div>
+  </ng-template>
+
+  <p-drawer 
+    [(visible)]="isDrawerVisible" 
+    position="bottom" 
+    [styleClass]="isSheetExpanded ? 'access-sheet-drawer sheet-expanded' : 'access-sheet-drawer'"
+    [showCloseIcon]="false"
+    [modal]="false" 
+  >
+    <ng-template pTemplate="header">
+      <div 
+        class="bottom-sheet-header" 
+        (click)="toggleSheetState()" 
+        (touchstart)="onTouchStart($event)"
+        (touchend)="onTouchEnd($event)"
+      >
+        <div class="bottom-sheet-grabber"></div>
+      </div>
+    </ng-template>
+    <app-access-list></app-access-list>
+  </p-drawer>
+
   <footer class="vms-footer">
     <button pButton pRipple type="button" class="p-button-text footer-button active">
       <i class="pi pi-compass"></i>
