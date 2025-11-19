@@ -1,69 +1,146 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, HostListener, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FloorPlanComponent } from "./components/floor-plan/floor-plan.component";
-import { TreeViewComponent } from './components/tree-view/tree-view.component';
-import { ButtonModule } from 'primeng/button';
-import { SplitterModule } from 'primeng/splitter';
+import { FormsModule } from '@angular/forms';
+import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
-import floorData from './components/floor-plan/e12-floor1.json';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { ToolbarModule } from 'primeng/toolbar';
+import { CardModule } from 'primeng/card';
+import { SelectModule } from 'primeng/select';
+import { InputGroupModule } from 'primeng/inputgroup';
+import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
+import { ChipModule } from 'primeng/chip';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+
+import { BuildingData, BuildingDataService } from './services/building-data.service';
+import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
+
+// 2. Import Services ที่เราจะใช้
+import { AuthService, RolePermission } from './services/auth.service';
+import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
+import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
+
+type SheetState = 'peek' | 'default' | 'expanded';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ CommonModule, FloorPlanComponent, TreeViewComponent, BuildingViewComponent, ButtonModule, SplitterModule ],
+  imports: [
+    CommonModule,
+    FormsModule,
+    FloorPlanComponent,
+    BuildingViewComponent,
+    ButtonModule,
+    InputTextModule,
+    ToolbarModule,
+    CardModule,
+    SelectModule,
+    InputGroupModule,
+    InputGroupAddonModule,
+    ChipModule,
+    ProgressSpinnerModule,
+    AccessListComponent // 2. เพิ่ม Component ใหม่
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class App {
-  buildingData: any = floorData;
-  highlightedId: string | null = null;
-  selectedNodeData: any = null;
+export class App implements OnInit {
+  buildingData: BuildingData;
   selectedFloorIndex: number | null = null;
   public lastActiveFloor: number | null = null;
+  public selectedFloorValue: number | null = null;
+  public isLoading = true;
+  public isSheetVisible = true;
+
+  private readonly sheetStates: SheetState[] = ['peek', 'default', 'expanded'];
+  private sheetStateIndex = 0;
+  private readonly dragThreshold = 60;
+  private isDraggingSheet = false;
+  private dragMoved = false;
+  private suppressNextTap = false;
+
+  get sheetState(): SheetState {
+    return this.sheetStates[this.sheetStateIndex];
+  }
+
+  // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
   private readonly floorPalette = [
     '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
 
-  constructor(private cdr: ChangeDetectorRef) {
-    this.initialiseFloors();
+  // 4. (แก้ไข) Properties สำหรับ Dropdown Role (แบบ "ต่อจริง")
+  public availableRoles$!: Observable<RolePermission[]>;
+  public selectedRole: string = 'GUEST';
+
+  // 5. Inject Services
+  private buildingDataService = inject(BuildingDataService);
+  private authService = inject(AuthService);
+  private interactionService = inject(FloorplanInteractionService);
+
+  constructor() {
+    this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
+    // 6. (แก้ไข) โหลด Role จาก AuthService
+    this.availableRoles$ = this.authService.getRoles();
   }
 
-  onZoneChanged(id: string | null): void {
-    this.highlightedId = id;
+  ngOnInit(): void {
+    this.loadBuilding('E12');
+    // 7. (แก้ไข) ตั้งค่าสิทธิ์เริ่มต้นเมื่อแอปโหลด
+    this.onRoleChange(this.selectedRole);
   }
 
-  onTreeNodeSelected(data: any): void {
-    if (data?.floor && this.selectedFloor?.floor !== data.floor) {
-      this.onFloorSelected(data.floor);
-    }
-    this.selectedNodeData = data ?? null;
+  /**
+   * 8. (แก้ไข) ฟังก์ชันนี้จะถูกเรียกเมื่อ Dropdown เปลี่ยน (แบบ "ต่อจริง")
+   */
+  onRoleChange(role: string): void {
+    if (!role) return;
+    this.selectedRole = role;
+
+    // 9. (แก้ไข) ดึง "Allow List" (string[]) จาก Supabase
+    this.authService.getPermissionList(role)
+      .pipe(take(1))
+      .subscribe(allowList => {
+        // 10. (แก้ไข) ส่ง "Allow List" ไปให้ 3D Model
+        this.interactionService.setPermissionList(allowList);
+      });
+  }
+
+  private loadBuilding(buildingId: string): void {
+    this.isLoading = true;
+    this.buildingDataService
+      .getBuilding(buildingId)
+      .pipe(take(1))
+      .subscribe(data => {
+      this.buildingData = this.prepareBuildingData(data);
+      this.selectedFloorIndex = null;
+      this.selectedFloorValue = null;
+      this.lastActiveFloor = null;
+      this.isLoading = false;
+    });
   }
 
   onFloorSelected(floorNumber: number): void {
-  const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
-  if (index === -1) return;
+    const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
+    if (index === -1) return;
 
-  // 1. อัปเดต state เพื่อบอก building-view ให้ไฮไลท์
-  this.lastActiveFloor = floorNumber;
-
-  // 2. บังคับให้ Angular อัปเดตหน้าจอทันทีเพื่อแสดงไฮไลท์
-  this.cdr.detectChanges(); 
-
-  // 3. หลังจากหน้าจออัปเดตแล้ว ค่อยหน่วงเวลาเพื่อเปลี่ยนหน้า
-  setTimeout(() => {
+    this.lastActiveFloor = floorNumber;
     this.selectedFloorIndex = index;
-    this.highlightedId = null;
-    this.selectedNodeData = null;
-    this.cdr.detectChanges(); 
-    }, 50); 
+    this.selectedFloorValue = floorNumber;
+  }
+
+  onFloorPlanFloorChange(floorNumber: number): void {
+    if (typeof floorNumber !== 'number' || Number.isNaN(floorNumber)) {
+      return;
+    }
+    this.onFloorSelected(floorNumber);
   }
 
   resetToBuildingOverview(): void {
     this.selectedFloorIndex = null;
-    this.selectedNodeData = null;
-    this.highlightedId = null;
+    this.selectedFloorValue = null;
   }
 
   get selectedFloor(): any | null {
@@ -71,23 +148,139 @@ export class App {
     return this.buildingData.floors[this.selectedFloorIndex] ?? null;
   }
 
-  private initialiseFloors(): void {
-    if (!this.buildingData?.floors) {
-      this.buildingData = { buildingId: 'E12', buildingName: 'E12 Engineering Building', floors: [] };
-    }
-    const baseWalls = this.buildingData.floors[0]?.walls ? this.cloneWalls(this.buildingData.floors[0].walls) : [];
+  cycleSheetState(): void {
+    this.sheetStateIndex = (this.sheetStateIndex + 1) % this.sheetStates.length;
+  }
 
-    this.buildingData.floors = this.buildingData.floors.map((floor: any, index: number) => ({
+  private gestureStartY: number | null = null;
+
+  onGestureStart(event: TouchEvent | MouseEvent): void {
+    const point = this.extractClientY(event);
+    if (point === null) return;
+    this.gestureStartY = point;
+    this.isDraggingSheet = true;
+    this.dragMoved = false;
+  }
+
+  @HostListener('document:touchmove', ['$event'])
+  @HostListener('document:mousemove', ['$event'])
+  onGestureMove(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet || this.gestureStartY === null) return;
+    const point = this.extractClientY(event);
+    if (point === null) return;
+
+    if (event instanceof TouchEvent) {
+      event.preventDefault();
+    }
+
+    const distance = this.gestureStartY - point;
+
+    if (distance > this.dragThreshold) {
+      this.moveSheetState('up');
+      this.dragMoved = true;
+      this.gestureStartY = point;
+    } else if (distance < -this.dragThreshold) {
+      this.moveSheetState('down');
+      this.dragMoved = true;
+      this.gestureStartY = point;
+    }
+  }
+
+  @HostListener('document:touchend', ['$event'])
+  @HostListener('document:touchcancel', ['$event'])
+  @HostListener('document:mouseup', ['$event'])
+  onGlobalGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+    this.onGestureEnd(event);
+  }
+
+  onGestureEnd(event: TouchEvent | MouseEvent): void {
+    if (!this.isDraggingSheet) return;
+
+    const startY = this.gestureStartY;
+    this.isDraggingSheet = false;
+    this.gestureStartY = null;
+
+    const point = this.extractClientY(event);
+    if (point === null || startY === null) {
+      this.finalizeGesture();
+      return;
+    }
+
+    const distance = startY - point;
+
+    if (!this.dragMoved && Math.abs(distance) > this.dragThreshold / 2) {
+      this.moveSheetState(distance > 0 ? 'up' : 'down');
+      this.dragMoved = true;
+    }
+
+    this.finalizeGesture();
+  }
+
+  onSheetHeaderTap(): void {
+    if (this.suppressNextTap) {
+      this.suppressNextTap = false;
+      return;
+    }
+    this.cycleSheetState();
+  }
+
+  private moveSheetState(direction: 'up' | 'down'): void {
+    if (direction === 'up' && this.sheetStateIndex < this.sheetStates.length - 1) {
+      this.sheetStateIndex += 1;
+    } else if (direction === 'down' && this.sheetStateIndex > 0) {
+      this.sheetStateIndex -= 1;
+    }
+    this.suppressNextTap = false;
+  }
+
+  private finalizeGesture(): void {
+    this.suppressNextTap = this.dragMoved;
+    this.dragMoved = false;
+  }
+
+  private extractClientY(event: TouchEvent | MouseEvent): number | null {
+    if ('touches' in event && event.touches.length) {
+      return event.touches[0]?.clientY ?? null;
+    }
+    if ('changedTouches' in event && event.changedTouches.length) {
+      return event.changedTouches[0]?.clientY ?? null;
+    }
+    if (event instanceof MouseEvent) {
+      return event.clientY;
+    }
+    return null;
+  }
+
+  private prepareBuildingData(data: BuildingData): BuildingData {
+    const baseData: BuildingData = {
+      buildingId: data?.buildingId ?? 'E12',
+      buildingName: data?.buildingName ?? 'E12 Engineering Building',
+      floors: Array.isArray(data?.floors) ? [...data.floors] : []
+    };
+
+    const baseWalls = baseData.floors[0]?.walls ? this.cloneWalls(baseData.floors[0].walls) : [];
+
+    const hydratedFloors = baseData.floors.map((floor: any, index: number) => ({
       ...floor,
       color: floor.color ?? this.floorPalette[index % this.floorPalette.length]
     }));
 
-    const existingCount = this.buildingData.floors.length;
+    const existingCount = hydratedFloors.length;
     for (let floorNumber = existingCount + 1; floorNumber <= this.totalFloors; floorNumber++) {
-      this.buildingData.floors.push(
-        this.createPlaceholderFloor(floorNumber, this.floorPalette[(floorNumber - 1) % this.floorPalette.length], baseWalls)
+      hydratedFloors.push(
+        this.createPlaceholderFloor(
+          floorNumber,
+          this.floorPalette[(floorNumber - 1) % this.floorPalette.length],
+          baseWalls
+        )
       );
     }
+
+    return {
+      ...baseData,
+      floors: hydratedFloors
+    };
   }
 
   private createPlaceholderFloor(floorNumber: number, color: string, baseWalls: any[]): any {

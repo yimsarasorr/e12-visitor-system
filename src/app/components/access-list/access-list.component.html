@@ -1,0 +1,46 @@
+<div class="access-list-container">
+  <div class="access-list-header">
+    <h3 class="header-title">พื้นที่ที่เข้าถึงได้</h3>
+    <span class="header-badge" *ngIf="accessibleAssets$ | async as assets">
+      {{ assets.length }} รายการ
+    </span>
+  </div>
+
+  <div class="list-content">
+    <ng-container *ngIf="accessibleAssets$ | async as assets">
+      
+      <div *ngIf="assets.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <i class="pi pi-lock"></i>
+        </div>
+        <h4>ไม่มีสิทธิ์เข้าถึงพื้นที่</h4>
+        <p>กรุณาเปลี่ยน Role หรือติดต่อเจ้าหน้าที่</p>
+      </div>
+
+      <div *ngFor="let asset of assets" class="access-item">
+        <div class="item-status-col">
+          <span class="status-badge unlocked">
+            <i class="pi pi-check"></i> เปิด
+          </span>
+          <span class="distance-text">120 ม.</span> </div>
+
+        <div class="item-info-col">
+          <h4 class="item-name">{{ asset.name }}</h4>
+          <div class="item-meta">
+            <i class="pi pi-map-marker"></i>
+            <span>ชั้น {{ asset.floor_number }} • {{ asset.type }}</span>
+          </div>
+          <div class="item-hours">
+            <i class="pi pi-clock"></i> 08:00 - 20:00 น.
+          </div>
+        </div>
+
+        <div class="item-action-col">
+          <span class="access-text">เข้าได้</span>
+          <i class="pi pi-bookmark item-bookmark"></i>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+</div>

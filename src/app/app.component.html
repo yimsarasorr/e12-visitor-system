@@ -1,66 +1,147 @@
-<div class="main-layout">
-  <header class="main-header">
-    <h1>E12 Visitor Management System</h1>
-  </header>
-  
-  <main class="main-content">
-    <ng-container *ngIf="!selectedFloor; else floorWorkspace">
-      <div class="building-selection">
-        <div class="selection-copy">
-          <h2>สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์</h2>
-          <p>เลือกชั้นที่ต้องการเพื่อดูแผนผัง พื้นที่ และระดับการเข้าถึงสำหรับ Visitor, Staff หรือ Blacklist</p>
-          <button type="button" *ngIf="selectedFloorIndex !== null" (click)="resetToBuildingOverview()">รีเซ็ตมุมมอง</button>
-        </div>
-        <div class="selection-canvas">
-          <app-building-view
-            [floors]="buildingData.floors"
-            [activeFloor]="lastActiveFloor" (floorSelected)="onFloorSelected($event)">
-          </app-building-view>
+<div class="vms-layout">
+  <p-toolbar styleClass="vms-header">
+    <ng-template pTemplate="start">
+      <div class="header-brand">
+        <img src="assets/FastPass_Icon_1.png" alt="Fastpass" class="brand-logo" />
+        <div class="brand-copy">
+          <span class="brand-title">Fastpass</span>
+          <span class="brand-subtitle">ระบบเข้าอาคาร</span>
         </div>
       </div>
+    </ng-template>
+    <ng-template pTemplate="end">
+      <div class="header-actions">
+        <button pButton pRipple type="button" class="p-button-rounded p-button-text header-action">
+          <i class="pi pi-bell"></i>
+        </button>
+        <p-select 
+          [options]="(availableRoles$ | async) ?? []"
+          optionLabel="role"
+          optionValue="role"
+          [(ngModel)]="selectedRole"
+          (onChange)="onRoleChange($event.value)"
+          styleClass="role-selector"
+          aria-label="เลือก Role ผู้ใช้งาน"
+        ></p-select>
+      </div>
+    </ng-template>
+  </p-toolbar>
+
+  <main class="vms-content" [class.floor-active]="!!selectedFloor">
+    <section class="search-section">
+      <p-inputGroup class="floating-search-bar">
+        <span class="p-inputgroup-addon search-addon">
+          <i class="pi pi-search"></i>
+        </span>
+        <input
+          pInputText
+          type="text"
+          [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
+          aria-label="ค้นหาอาคารหรือสถานที่"
+        />
+      </p-inputGroup>
+    </section>
+
+    <ng-container *ngIf="!isLoading; else loadingState">
+      <p-card *ngIf="!selectedFloor" styleClass="overview-card">
+        <ng-template pTemplate="content">
+          <div class="overview-body">
+            <div class="overview__canvas">
+              <app-building-view
+                [floors]="buildingData.floors"
+                [activeFloor]="lastActiveFloor"
+                (floorSelected)="onFloorSelected($event)">
+              </app-building-view>
+            </div>
+            <div class="overview__copy">
+              <h1>{{ buildingData.buildingName || 'สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์' }}</h1>
+              <p>
+                หมุนดูแปลนอาคารก่อนเลือกชั้นที่ต้องการเข้าใช้งาน และบันทึกรายละเอียดไว้สำหรับการจำลอง
+                การเข้าออกในระบบ Fastpass
+              </p>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
+
+      <p-card *ngIf="selectedFloor" styleClass="floor-card">
+        <ng-template pTemplate="content">
+          <div class="floor-explorer">
+            <div class="floor-explorer__back-row">
+              <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
+                <i class="pi pi-arrow-left"></i>
+                <span>กลับไปเลือกอาคาร</span>
+              </button>
+            </div>
+          <div class="floor-explorer__content">
+              <div class="floor-explorer__canvas">
+                <app-floor-plan
+                  [floorData]="selectedFloor"
+                  [floors]="buildingData.floors"
+                  [activeFloorValue]="selectedFloorValue"
+                  (floorChange)="onFloorPlanFloorChange($event)"
+                ></app-floor-plan>
+              </div>
+            </div>
+          </div>
+        </ng-template>
+      </p-card>
     </ng-container>
 
-    <ng-template #floorWorkspace>
-      <p-splitter [style]="{'height': '100%'}" [panelSizes]="[32, 68]">
-        <ng-template pTemplate>
-          <div class="panel panel-left">
-            <div class="panel-section">
-              <div class="panel-section__header">
-                <div>
-                  <h3>{{ buildingData.buildingName }}</h3>
-                  <p class="panel-section__subtitle">ชั้น {{ selectedFloor?.floor }}</p>
-                </div>
-                <button type="button" class="link-button" (click)="resetToBuildingOverview()">กลับไปดูอาคาร</button>
-              </div>
-              <div class="mini-building">
-                <app-building-view
-                  [floors]="buildingData.floors"
-                  [activeFloor]="selectedFloor?.floor ?? null"
-                  (floorSelected)="onFloorSelected($event)">
-                </app-building-view>
-              </div>
-            </div>
-            <div class="panel-section tree-section">
-              <h3>Zone Directory</h3>
-              <app-tree-view
-                [data]="buildingData"
-                [activeFloor]="selectedFloor?.floor ?? null"
-                [highlightedId]="highlightedId"
-                (nodeSelected)="onTreeNodeSelected($event)">
-              </app-tree-view>
-            </div>
-          </div>
-        </ng-template>
-        <ng-template pTemplate>
-          <div class="panel panel-right">
-            <app-floor-plan
-              [floorData]="selectedFloor"
-              [panToTarget]="selectedNodeData"
-              (zoneChanged)="onZoneChanged($event)">
-            </app-floor-plan>
-          </div>
-        </ng-template>
-      </p-splitter>
+    <ng-template #loadingState>
+      <div class="loading-state">
+        <p-progressSpinner styleClass="loading-spinner"></p-progressSpinner>
+        <span>กำลังโหลดข้อมูลอาคาร...</span>
+      </div>
     </ng-template>
   </main>
+
+  <ng-template #floorWorkspace>
+    <div class="panel panel-right floor-plan-content">
+      <!-- ...existing code... -->
+    </div>
+  </ng-template>
+
+  <section
+    *ngIf="isSheetVisible"
+    class="access-bottom-sheet"
+    [ngClass]="'sheet-state-' + sheetState"
+    role="dialog"
+    aria-modal="false"
+  >
+    <div
+      class="bottom-sheet-header"
+      (click)="onSheetHeaderTap()"
+      (touchstart)="onGestureStart($event)"
+      (mousedown)="onGestureStart($event)"
+    >
+      <div class="bottom-sheet-grabber"></div>
+    </div>
+    <div class="bottom-sheet-content">
+      <app-access-list></app-access-list>
+    </div>
+  </section>
+
+  <footer class="vms-footer">
+    <button pButton pRipple type="button" class="p-button-text footer-button active">
+      <i class="pi pi-compass"></i>
+      <span>สำรวจ</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-calendar"></i>
+      <span>การจอง</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-bookmark"></i>
+      <span>บันทึกแล้ว</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-clock"></i>
+      <span>ล่าสุด</span>
+    </button>
+    <button pButton pRipple type="button" class="p-button-text footer-button">
+      <i class="pi pi-user"></i>
+      <span>โปรไฟล์</span>
+    </button>
+  </footer>
 </div>

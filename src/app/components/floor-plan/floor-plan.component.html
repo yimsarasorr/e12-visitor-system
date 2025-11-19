@@ -1,156 +1,140 @@
 <div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
-
-  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
-    <div class="floor-indicator" *ngIf="floorData">
-      <span class="floor-indicator__number">{{ floorData.floor }}</span>
-      <div class="floor-indicator__label">
-        <span class="floor-indicator__title">{{ floorData.floorName }}</span>
-        <span class="floor-indicator__subtitle">E12 Engineering Hub</span>
-      </div>
-    </div>
-
-    <div class="access-terminal">
-      <span class="terminal-title">Face Access</span>
-      <div class="terminal-buttons">
-        <p-button
-          (click)="simulateAuthentication(-1)"
-          label="-1"
-          styleClass="p-button-sm p-button-danger"
-        ></p-button>
-        <p-button
-          (click)="simulateAuthentication(0)"
-          label="0"
-          styleClass="p-button-sm p-button-secondary"
-        ></p-button>
-        <p-button
-          (click)="simulateAuthentication(1)"
-          label="1"
-          styleClass="p-button-sm p-button-success"
-        ></p-button>
-      </div>
-    </div>
-
-    <div class="view-toggle-container">
-      <p-button
-        (click)="toggleView()"
-        [label]="currentView === 'iso' ? 'Top View' : 'ISO View'"
-        styleClass="p-button-sm p-button-secondary"
-      ></p-button>
-      <p-button
-        (click)="toggleFullscreen()"
-        [icon]="isFullscreen ? 'pi pi-window-minimize' : 'pi pi-window-maximize'"
-        [label]="isFullscreen ? 'Exit' : 'Fullscreen'"
-        styleClass="p-button-sm"
-      ></p-button>
-    </div>
-  </div>
-
   <canvas #canvas></canvas>
 
-  <div class="info-display-container">
-    <div *ngIf="currentZoneId" class="zone-display">
-      Zone: <strong>{{ currentZoneId }}</strong>
+  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
+    <div class="floor-toolbar-left" *ngIf="floorData">
+      <!-- <div class="floor-indicator">
+        <span class="floor-indicator__number">{{ floorData.floor }}</span>
+        <div class="floor-indicator__label">
+          <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
+          <span class="floor-indicator__subtitle">Floorplan</span>
+        </div>
+      </div> -->
+
+      <div class="floor-dropdown" *ngIf="floorOptions.length">
+        <p-select
+          inputId="floor-dropdown"
+          [options]="floorOptions"
+          [ngModel]="activeFloorValue"
+          (ngModelChange)="onFloorSelectionChange($event)"
+          placeholder="เลือกชั้น"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="floor-dropdown__control"
+        ></p-select>
+      </div>
     </div>
-    <div *ngIf="playerPositionDisplay" class="zone-display">
-      Coords: <strong>{{ playerPositionDisplay }}</strong>
+
+    <div class="toolbar-meta">
+      <div class="toolbar-actions">
+        <button
+          pButton
+          type="button"
+          class="toolbar-button"
+          [icon]="currentView === 'iso' ? 'pi pi-cube' : 'pi pi-map'"
+          [label]="currentView === 'iso' ? 'มุมมองอาคาร' : 'มุมมองจากบน'"
+          (click)="toggleView()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          class="toolbar-icon-button"
+          [icon]="isFullscreen ? 'pi pi-compress' : 'pi pi-external-link'"
+          (click)="toggleFullscreen()"
+          [attr.aria-label]="isFullscreen ? 'ปิดโหมดเต็มหน้าจอ' : 'เปิดโหมดเต็มหน้าจอ'"
+        ></button>
+      </div>
+
+      <div class="info-display-container">
+        <div class="zone-display" *ngIf="interaction.currentZoneId$ | async as zoneId">
+          <i class="pi pi-map-marker"></i>
+          <span>{{ zoneId }}</span>
+        </div>
+        <div class="zone-display" *ngIf="playerPositionDisplay$ | async as position">
+          <i class="pi pi-compass"></i>
+          <span>{{ position }}</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div
-    class="mobile-controls"
-    (pointerdown)="disableOrbitControls($event)"
-    (pointerup)="enableOrbitControls($event)"
-  >
-    <button class="control-btn up" (touchstart)="move($event, 'ArrowUp', true)" (touchend)="move($event, 'ArrowUp', false)">▲</button>
-    <div class="horizontal-controls">
-      <button class="control-btn left" (touchstart)="move($event, 'ArrowLeft', true)" (touchend)="move($event, 'ArrowLeft', false)">◄</button>
-      <button class="control-btn down" (touchstart)="move($event, 'ArrowDown', true)" (touchend)="move($event, 'ArrowDown', false)">▼</button>
-      <button class="control-btn right" (touchstart)="move($event, 'ArrowRight', true)" (touchend)="move($event, 'ArrowRight', false)">►</button>
+  <div class="camera-control-stack" (click)="$event.stopPropagation()">
+    <button
+      pButton
+      type="button"
+      class="control-button joystick-toggle"
+      icon="pi pi-gamepad"
+      [class.active]="isJoystickVisible"
+      (click)="toggleJoystickVisibility()"
+      [attr.aria-pressed]="isJoystickVisible"
+      aria-label="สลับการแสดงจอยสติ๊ก"
+    ></button>
+    <div class="zoom-controls">
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-plus"
+        (click)="adjustCameraZoom('in')"
+        [disabled]="!canZoomIn"
+        aria-label="ซูมเข้า"
+      ></button>
+      <span class="zoom-divider"></span>
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-minus"
+        (click)="adjustCameraZoom('out')"
+        [disabled]="!canZoomOut"
+        aria-label="ซูมออก"
+      ></button>
     </div>
   </div>
+
+  <app-joystick *ngIf="isJoystickVisible"></app-joystick>
 </div>
 
 <p-dialog
-  header="Details"
-  [(visible)]="isDetailDialogVisible"
-  (onHide)="onDialogHide()"
-  [modal]="true"
-  [style]="{ width: '50vw', 'max-width': '520px' }"
+  header="รายละเอียดพื้นที่"
+  [(visible)]="detailDialogVisible"
+  (onHide)="onDialogHide()" [modal]="true"
+  appendTo="body"
+  [style]="{ width: '48vw', 'max-width': '480px' }"
+  [breakpoints]="{ '1200px': '60vw', '960px': '70vw', '640px': '92vw' }"
   [draggable]="false"
   [resizable]="false"
+  styleClass="floor-detail-dialog"
 >
-  <div *ngIf="selectedObject as selected" class="detail-content" (click)="$event.stopPropagation()">
+  <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
     <div class="detail-header">
-      <div>
-        <h3>{{ selected.data?.name || selected.data?.id }}</h3>
-        <p class="detail-subtitle">
-          {{ getTypeLabel(selected.type) }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
-        </p>
-      </div>
+      <h3>{{ selected.data?.name || selected.data?.id }}</h3>
+      <p class="detail-subtitle">
+        {{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
+      </p>
     </div>
 
     <ng-container [ngSwitch]="selected.type">
-      <ng-container *ngSwitchCase="'zone'">
-        <p class="detail-description">
-          พื้นที่โซนนี้มี {{ selected.data?.areas?.length || 0 }} พื้นที่ย่อย และ {{ selected.data?.rooms?.length || 0 }} ห้องหลัก
+      <div class="detail-section" *ngSwitchCase="'door'">
+        <h4>สิทธิ์การเข้าใช้งาน</h4>
+        <p>
+          <strong>ID ประตู:</strong>
+          {{ selected.data.id }}
         </p>
-        <div *ngIf="selected.data?.boundary" class="detail-section">
-          <h4>Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'area'">
-        <div class="detail-section">
-          <h4>Area Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'room'">
-        <div class="detail-section">
-          <h4>Room Boundary</h4>
-          <ul>
-            <li>Min: ({{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }})</li>
-            <li>Max: ({{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }})</li>
-          </ul>
-        </div>
-        <div class="detail-section" *ngIf="selected.data?.doors?.length">
-          <h4>Doors</h4>
-          <ul>
-            <li *ngFor="let door of selected.data.doors">
-              {{ door.id }} — Access Level: {{ door.accessLevel }}
-            </li>
-          </ul>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'door'">
-        <div class="detail-section">
-          <h4>Door Access</h4>
-          <p><strong>Required Level:</strong> {{ selected.data.accessLevel }}</p>
-          <p><strong>Your Level:</strong> {{ currentUserAccessLevel }}</p>
-          <p><strong>Status:</strong>
-            <span [ngClass]="currentUserAccessLevel >= selected.data.accessLevel ? 'status-unlocked' : 'status-locked'">
-              {{ currentUserAccessLevel >= selected.data.accessLevel ? 'UNLOCKED' : 'LOCKED' }}
+        <p>
+        </p>
+        <p>
+          <strong>สถานะ:</strong>
+          <ng-container *ngIf="interaction.permissionList$ | async as list">
+            <span [ngClass]="list.includes(selected.data.id) ? 'status-unlocked' : 'status-locked'">
+              {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
             </span>
-          </p>
-        </div>
-      </ng-container>
-
-      <ng-container *ngSwitchCase="'object'">
-        <div class="detail-section">
-          <h4>Asset Details</h4>
-          <p><strong>Type:</strong> {{ selected.data.type }}</p>
-          <p *ngIf="selected.data?.boundary"><strong>Coverage:</strong> {{ selected.data.boundary.min.x }}, {{ selected.data.boundary.min.y }} → {{ selected.data.boundary.max.x }}, {{ selected.data.boundary.max.y }}</p>
-        </div>
-      </ng-container>
+          </ng-container>
+        </p>
+      </div>
+      <div class="detail-section" *ngSwitchDefault>
+        <p class="detail-description">รอข้อมูลเพิ่มเติมสำหรับพื้นที่นี้</p>
+      </div>
     </ng-container>
   </div>
 </p-dialog>
