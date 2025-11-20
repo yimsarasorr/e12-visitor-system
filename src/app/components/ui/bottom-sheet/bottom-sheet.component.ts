@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BottomSheetService, SheetData } from '../../../../services/bottom-sheet.service';
-import { AccessListComponent } from '../../../access-list/access-list.component'; 
+import { BottomSheetService, SheetData } from '../../../services/bottom-sheet.service';
+import { AccessListComponent } from '../../access-list/access-list.component'; 
 // (Import Component อื่นๆ ที่จะใช้ใน Sheet เช่น BuildingList ของเพื่อน ถ้ามี)
 
 @Component({
@@ -12,7 +12,7 @@ import { AccessListComponent } from '../../../access-list/access-list.component'
   styleUrls: ['./bottom-sheet.component.css']
 })
 export class BottomSheetComponent implements OnInit {
-  public service = inject(BottomSheetService);
+  private bottomSheetService = inject(BottomSheetService);
   
   currentData: SheetData = { mode: 'hidden' };
   currentState: 'peek' | 'default' | 'expanded' = 'default';
@@ -24,12 +24,12 @@ export class BottomSheetComponent implements OnInit {
 
   ngOnInit() {
     // ฟังข้อมูล: ว่าต้องโชว์อะไร
-    this.service.sheetState$.subscribe(data => {
+    this.bottomSheetService.sheetState$.subscribe((data: SheetData) => {
       this.currentData = data;
     });
 
     // ฟังสถานะ: ว่าต้องสูงแค่ไหน
-    this.service.expansionState$.subscribe(state => {
+    this.bottomSheetService.expansionState$.subscribe((state: 'peek' | 'default' | 'expanded') => {
       this.currentState = state;
     });
   }
@@ -70,11 +70,11 @@ export class BottomSheetComponent implements OnInit {
     const ratio = currentH / screenH;
 
     if (ratio > 0.6) {
-      this.service.setExpansionState('expanded');
+      this.bottomSheetService.setExpansionState('expanded');
     } else if (ratio < 0.25) {
-      this.service.setExpansionState('peek');
+      this.bottomSheetService.setExpansionState('peek');
     } else {
-      this.service.setExpansionState('default');
+      this.bottomSheetService.setExpansionState('default');
     }
     
     // ล้าง inline style เพื่อให้ class ทำงานต่อ
@@ -83,9 +83,9 @@ export class BottomSheetComponent implements OnInit {
 
   toggleState() {
     if (this.currentState === 'expanded') {
-      this.service.setExpansionState('default');
+      this.bottomSheetService.setExpansionState('default');
     } else {
-      this.service.setExpansionState('expanded');
+      this.bottomSheetService.setExpansionState('expanded');
     }
   }
 }

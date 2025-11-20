@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, HostListener, OnInit, inject, ChangeDetectorRef, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
@@ -13,6 +13,7 @@ import { InputGroupModule } from 'primeng/inputgroup';
 import { InputGroupAddonModule } from 'primeng/inputgroupaddon';
 import { ChipModule } from 'primeng/chip';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { BottomSheetComponent } from './components/ui/bottom-sheet/bottom-sheet.component'; // Import ตัวใหม่
 
 import { BuildingData, BuildingDataService } from './services/building-data.service';
 import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
@@ -42,7 +43,7 @@ type SheetState = 'peek' | 'default' | 'expanded';
     InputGroupAddonModule,
     ChipModule,
     ProgressSpinnerModule,
-    AccessListComponent // 2. เพิ่ม Component ใหม่
+    BottomSheetComponent // แทนที่ AccessListComponent ด้วย BottomSheetComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
@@ -88,6 +89,10 @@ export class App implements OnInit {
   private buildingDataService = inject(BuildingDataService);
   private authService = inject(AuthService);
   private interactionService = inject(FloorplanInteractionService);
+  // สำหรับตรวจจับการเปลี่ยนแปลงเมื่อสลับ view
+  private cdr = inject(ChangeDetectorRef);
+  // ถ้าต้องการ DOM manipulation ในอนาคต
+  private renderer = inject(Renderer2);
 
   constructor() {
     this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
@@ -141,13 +146,17 @@ export class App implements OnInit {
 
   // 3. ฟังก์ชันเมื่อเลือกตึกจาก Map
   onBuildingSelected(buildingId: string): void {
-    if (buildingId === 'E12') {
-       this.loadBuilding('E12');
-       this.viewMode = 'building'; // เข้าสู่หน้าเลือกชั้น
-    }
+    if (!buildingId) return;
+    // โหลดข้อมูลตึกที่เลือก (รองรับตึกอื่น ๆ ด้วย)
+    this.loadBuilding(buildingId);
+    // เคลียร์การเลือกชั้นเดิม และไปยังหน้าเลือกชั้น (Building View)
+    this.selectedFloorIndex = null;
+    this.selectedFloorValue = null;
+    this.lastActiveFloor = null;
+    this.viewMode = 'building';
   }
 
-  onFloorSelected(floorNumber: number): void {
+  onFloorDropdownChange(floorNumber: number): void {
     const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
     if (index === -1) return;
 
@@ -157,16 +166,27 @@ export class App implements OnInit {
 
     // 4. เมื่อเลือกชั้น ให้เปลี่ยนมุมมองเป็นหน้า Floor
     this.viewMode = 'floor';
+    // บังคับตรวจจับการเปลี่ยนแปลงเพื่อให้ UI อัพเดตทันที
+    this.cdr.detectChanges();
   }
 
   // 5. ฟังก์ชันกลับ (Back Button) - ปรับให้รองรับการนำทางระหว่างมุมมอง
   resetToBuildingOverview(): void {
      if (this.viewMode === 'floor') {
-        this.viewMode = 'building';
+       // จาก Floor กลับไป Building view และเคลียร์การเลือกชั้น
+       this.viewMode = 'building';
+       this.selectedFloorIndex = null;
+       this.selectedFloorValue = null;
+     } else if (this.viewMode === 'building') {
+       // จาก Building กลับไป Map
+       this.viewMode = 'map';
+       this.selectedFloorIndex = null;
+       this.selectedFloorValue = null;
      } else {
-        this.viewMode = 'map'; // กลับไปหน้าแผนที่
+       // ถ้าอยู่ใน map ให้ยังคงเป็น map (ไม่มีอะไรต้องทำ)
+       this.viewMode = 'map';
      }
-  }
+   }
 
   get selectedFloor(): any | null {
     if (this.selectedFloorIndex === null) return null;

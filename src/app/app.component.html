@@ -1,5 +1,6 @@
 <div class="vms-layout">
-  <p-toolbar styleClass="vms-header">
+  <!-- แสดง toolbar เฉพาะเมื่อไม่ใช่ Map view -->
+  <p-toolbar styleClass="vms-header" *ngIf="viewMode !== 'map'">
     <ng-template pTemplate="start">
       <div class="header-brand">
         <img src="assets/FastPass_Icon_1.png" alt="Fastpass" class="brand-logo" />
@@ -41,40 +42,60 @@
   </p-toolbar>
 
   <main class="vms-content">
-    <!-- Map-only view: แสดงเฉพาะเมื่อ viewMode === 'map' -->
+    <!-- Map view -->
     <ng-container *ngIf="viewMode === 'map'">
       <app-map-view
         [buildingData]="buildingData"
         (buildingSelected)="onBuildingSelected($event)"
       ></app-map-view>
     </ng-container>
+
+    <!-- Building overview (เลือกชั้น) -->
+    <ng-container *ngIf="viewMode === 'building'">
+      <div class="building-selection">
+        <button type="button" class="back-to-map-btn" (click)="resetToBuildingOverview()">
+          <i class="pi pi-arrow-left"></i> กลับไปแผนที่
+        </button>
+
+        <div class="selection-canvas">
+          <app-building-view
+            [floors]="buildingData.floors"
+            [activeFloor]="lastActiveFloor"
+            (floorSelected)="onFloorDropdownChange($event)"
+          ></app-building-view>
+        </div>
+
+        <div class="selection-copy">
+          <h2>{{ buildingData.buildingName }}</h2>
+          <p>เลือกชั้นที่ต้องการเพื่อเข้าชม</p>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Floor plan view -->
+    <ng-container *ngIf="viewMode === 'floor'">
+      <div class="floor-plan-content">
+        <div class="floor-explorer__back-row">
+          <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
+            <i class="pi pi-arrow-left"></i>
+            <span>กลับไปเลือกชั้น</span>
+          </button>
+        </div>
+
+        <app-floor-plan
+          [floorData]="selectedFloor"
+          [floors]="buildingData.floors"
+          [activeFloorValue]="selectedFloorValue"
+          (floorChange)="onFloorPlanFloorChange($event)"
+        ></app-floor-plan>
+      </div>
+    </ng-container>
   </main>
 
-  <ng-template #floorWorkspace>
-    <div class="panel panel-right floor-plan-content">
-      <!-- ...existing code... -->
-    </div>
-  </ng-template>
-
-  <section
-    *ngIf="isSheetVisible"
-    class="access-bottom-sheet"
-    [ngClass]="'sheet-state-' + sheetState"
-    role="dialog"
-    aria-modal="false"
-  >
-    <div
-      class="bottom-sheet-header"
-      (click)="onSheetHeaderTap()"
-      (touchstart)="onGestureStart($event)"
-      (mousedown)="onGestureStart($event)"
-    >
-      <div class="bottom-sheet-grabber"></div>
-    </div>
-    <div class="bottom-sheet-content">
-      <app-access-list></app-access-list>
-    </div>
-  </section>
+  <!-- bottom sheet เฉพาะเมื่ออยู่ในมุมมอง floor -->
+  <ng-container *ngIf="viewMode === 'floor'">
+    <app-bottom-sheet></app-bottom-sheet>
+  </ng-container>
 
   <footer class="vms-footer">
     <button pButton pRipple type="button" class="p-button-text footer-button active">
