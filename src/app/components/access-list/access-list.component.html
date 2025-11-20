@@ -13,8 +13,8 @@
         <div class="empty-icon">
           <i class="pi pi-lock"></i>
         </div>
-        <h4>ไม่มีสิทธิ์เข้าถึงพื้นที่</h4>
-        <p>กรุณาเปลี่ยน Role หรือติดต่อเจ้าหน้าที่</p>
+        <h4>ไม่มีรายการสิทธิ์</h4>
+        <p>เลือก User (Visitor/Staff) ด้านบนเพื่อดูสิทธิ์</p>
       </div>
 
       <div *ngFor="let asset of assets" class="access-item">
@@ -22,7 +22,7 @@
           <span class="status-badge unlocked">
             <i class="pi pi-check"></i> เปิด
           </span>
-          <span class="distance-text">120 ม.</span> </div>
+        </div>
 
         <div class="item-info-col">
           <h4 class="item-name">{{ asset.name }}</h4>
@@ -30,14 +30,10 @@
             <i class="pi pi-map-marker"></i>
             <span>ชั้น {{ asset.floor_number }} • {{ asset.type }}</span>
           </div>
-          <div class="item-hours">
-            <i class="pi pi-clock"></i> 08:00 - 20:00 น.
-          </div>
         </div>
-
+        
         <div class="item-action-col">
-          <span class="access-text">เข้าได้</span>
-          <i class="pi pi-bookmark item-bookmark"></i>
+           <i class="pi pi-angle-right" style="color: #ccc;"></i>
         </div>
       </div>
 

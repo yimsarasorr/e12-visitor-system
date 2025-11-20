@@ -1,0 +1,56 @@
+:host {
+  --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
+  --sheet-transition: 0.35s cubic-bezier(0.4, 0.15, 0.1, 0.99);
+}
+
+.global-bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* เริ่มต้นให้ซ่อนลงไปข้างล่าง */
+  bottom: calc(-100% - var(--footer-height)); 
+  
+  background: white;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+  z-index: 1500; /* อยู่ระหว่าง Content กับ Footer */
+  
+  transition: bottom 0.3s ease, height var(--sheet-transition);
+  
+  /* ความสูงพื้นฐาน */
+  height: 40vh; 
+  display: flex;
+  flex-direction: column;
+}
+
+/* เมื่อแสดงผล (ดันขึ้นมาอยู่เหนือ Footer) */
+.global-bottom-sheet:not(.sheet-hidden) {
+  bottom: var(--footer-height);
+}
+
+/* States */
+.state-peek { height: 18vh !important; }
+.state-default { height: 40vh !important; }
+.state-expanded { height: 85vh !important; }
+
+/* Header */
+.sheet-header {
+  width: 100%;
+  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  flex-shrink: 0;
+}
+.sheet-grabber {
+  width: 48px;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}

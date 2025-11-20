@@ -1,0 +1,32 @@
+<div 
+  class="global-bottom-sheet"
+  [class.sheet-hidden]="currentData.mode === 'hidden'"
+  [class.state-peek]="currentState === 'peek'"
+  [class.state-default]="currentState === 'default'"
+  [class.state-expanded]="currentState === 'expanded'"
+>
+  <div 
+    class="sheet-header"
+    (click)="toggleState()"
+    (touchstart)="onTouchStart($event)"
+    (touchmove)="onTouchMove($event)"
+    (touchend)="onTouchEnd($event)"
+  >
+    <div class="sheet-grabber"></div>
+  </div>
+
+  <div class="sheet-content">
+    
+    @if (currentData.mode === 'access-list') {
+       <app-access-list></app-access-list>
+    }
+
+    @if (currentData.mode === 'building-list') {
+       <div style="padding: 20px;">
+         <h3>{{ currentData.title }}</h3>
+         <p>รายการตึก (Mockup)...</p>
+         </div>
+    }
+
+  </div>
+</div>

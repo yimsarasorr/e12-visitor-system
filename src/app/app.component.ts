@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FloorPlanComponent } from './components/floor-plan/floor-plan.component';
 import { BuildingViewComponent } from './components/building-view/building-view.component';
+import { MapViewComponent } from './components/map-view/map-view.component'; // 1. Import Map
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToolbarModule } from 'primeng/toolbar';
@@ -17,7 +18,7 @@ import { BuildingData, BuildingDataService } from './services/building-data.serv
 import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
 
 // 2. Import Services ที่เราจะใช้
-import { AuthService, RolePermission } from './services/auth.service';
+import { AuthService, UserProfile } from './services/auth.service';
 import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
 import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
 
@@ -31,6 +32,7 @@ type SheetState = 'peek' | 'default' | 'expanded';
     FormsModule,
     FloorPlanComponent,
     BuildingViewComponent,
+    MapViewComponent, // เพิ่ม MapViewComponent เข้ามา
     ButtonModule,
     InputTextModule,
     ToolbarModule,
@@ -64,6 +66,10 @@ export class App implements OnInit {
     return this.sheetStates[this.sheetStateIndex];
   }
 
+  // 2. เพิ่ม State ควบคุมมุมมอง
+  // เริ่มต้นที่หน้า Map
+  public viewMode: 'map' | 'building' | 'floor' = 'map'; 
+
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
   private readonly floorPalette = [
@@ -71,9 +77,12 @@ export class App implements OnInit {
     '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
   ];
 
-  // 4. (แก้ไข) Properties สำหรับ Dropdown Role (แบบ "ต่อจริง")
-  public availableRoles$!: Observable<RolePermission[]>;
-  public selectedRole: string = 'GUEST';
+  // เปลี่ยนตัวแปรสำหรับ Dropdown จาก Role -> Users
+  // public availableRoles$!: Observable<RolePermission[]>;
+  // public selectedRole: string = 'GUEST';
+  public availableUsers$!: Observable<UserProfile[]>;
+  public selectedUserId: string | null = null;
+  public currentUser: UserProfile | null = null;
 
   // 5. Inject Services
   private buildingDataService = inject(BuildingDataService);
@@ -82,28 +91,36 @@ export class App implements OnInit {
 
   constructor() {
     this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
-    // 6. (แก้ไข) โหลด Role จาก AuthService
-    this.availableRoles$ = this.authService.getRoles();
+    // เปลี่ยนให้ดึงรายชื่อ Users แทน Roles
+    this.availableUsers$ = this.authService.getUsers();
   }
 
   ngOnInit(): void {
     this.loadBuilding('E12');
-    // 7. (แก้ไข) ตั้งค่าสิทธิ์เริ่มต้นเมื่อแอปโหลด
-    this.onRoleChange(this.selectedRole);
+
+    // Optional: เลือก user ตัวอย่างตอนเริ่ม (ถ้ามี)
+    this.availableUsers$.pipe(take(1)).subscribe(users => {
+      if (users.length > 0) {
+        // เลือกผู้ใช้ตัวอย่าง (index 1 ตามตัวอย่าง) — ปรับตามข้อมูลจริงได้
+        const idx = Math.min(1, users.length - 1);
+        this.onUserChange(users[idx]);
+      }
+    });
   }
 
   /**
-   * 8. (แก้ไข) ฟังก์ชันนี้จะถูกเรียกเมื่อ Dropdown เปลี่ยน (แบบ "ต่อจริง")
+   * เรียกเมื่อเลือกผู้ใช้งาน (จาก dropdown)
+   * ดึง permission ของ user นี้ แล้วส่ง allow list ให้ interaction service
    */
-  onRoleChange(role: string): void {
-    if (!role) return;
-    this.selectedRole = role;
+  onUserChange(user: UserProfile | null): void {
+    if (!user) return;
+    this.selectedUserId = user.id;
+    this.currentUser = user;
 
-    // 9. (แก้ไข) ดึง "Allow List" (string[]) จาก Supabase
-    this.authService.getPermissionList(role)
+    this.authService.getUserPermissions(user.id, user.is_staff)
       .pipe(take(1))
       .subscribe(allowList => {
-        // 10. (แก้ไข) ส่ง "Allow List" ไปให้ 3D Model
+        console.log(`User: ${user.full_name}, Allowed Doors:`, allowList);
         this.interactionService.setPermissionList(allowList);
       });
   }
@@ -122,6 +139,14 @@ export class App implements OnInit {
     });
   }
 
+  // 3. ฟังก์ชันเมื่อเลือกตึกจาก Map
+  onBuildingSelected(buildingId: string): void {
+    if (buildingId === 'E12') {
+       this.loadBuilding('E12');
+       this.viewMode = 'building'; // เข้าสู่หน้าเลือกชั้น
+    }
+  }
+
   onFloorSelected(floorNumber: number): void {
     const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
     if (index === -1) return;
@@ -129,18 +154,18 @@ export class App implements OnInit {
     this.lastActiveFloor = floorNumber;
     this.selectedFloorIndex = index;
     this.selectedFloorValue = floorNumber;
+
+    // 4. เมื่อเลือกชั้น ให้เปลี่ยนมุมมองเป็นหน้า Floor
+    this.viewMode = 'floor';
   }
 
-  onFloorPlanFloorChange(floorNumber: number): void {
-    if (typeof floorNumber !== 'number' || Number.isNaN(floorNumber)) {
-      return;
-    }
-    this.onFloorSelected(floorNumber);
-  }
-
+  // 5. ฟังก์ชันกลับ (Back Button) - ปรับให้รองรับการนำทางระหว่างมุมมอง
   resetToBuildingOverview(): void {
-    this.selectedFloorIndex = null;
-    this.selectedFloorValue = null;
+     if (this.viewMode === 'floor') {
+        this.viewMode = 'building';
+     } else {
+        this.viewMode = 'map'; // กลับไปหน้าแผนที่
+     }
   }
 
   get selectedFloor(): any | null {

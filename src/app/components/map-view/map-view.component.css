@@ -1,0 +1,140 @@
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+
+  touch-action: none;;
+}
+
+/* Bottom Sheet สไตล์ Google Maps */
+.map-bottom-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 45vh; /* เริ่มต้นครึ่งจอ */
+  background: white;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+  z-index: 100;
+  transition: transform 0.3s ease;
+  transform: translateY(0);
+  display: flex;
+  flex-direction: column;
+}
+
+.map-bottom-sheet.expanded {
+  height: 85vh; /* ขยายขึ้นเมื่อกด */
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  background: #ddd;
+  border-radius: 10px;
+  margin: 12px auto;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sheet-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 3D Preview Area */
+.location-preview {
+  width: 100%;
+  height: 250px; /* ความสูงของ 3D View ใน Sheet */
+  background: #f1f5f9;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* ให้คลิกทะลุไปหมุนโมเดลได้ */
+}
+
+.enter-btn {
+  pointer-events: auto;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.location-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* List Style */
+.location-list {
+  display: flex;
+  flex-direction: column;
+}
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.item-icon { font-size: 1.5rem; }
+.item-name { font-weight: 600; color: #333; }
+.item-desc { font-size: 0.8rem; color: #666; }
+
+.geohash-badge {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #666;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-bottom: 8px;
+}
+.fab-container {
+  position: absolute;
+  bottom: 200px; /* ปรับความสูงหลบ Bottom Sheet */
+  right: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}

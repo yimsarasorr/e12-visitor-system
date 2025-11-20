@@ -15,85 +15,39 @@
           <i class="pi pi-bell"></i>
         </button>
         <p-select 
-          [options]="(availableRoles$ | async) ?? []"
-          optionLabel="role"
-          optionValue="role"
-          [(ngModel)]="selectedRole"
-          (onChange)="onRoleChange($event.value)"
+          [options]="(availableUsers$ | async) ?? []"
+          optionLabel="role_label" 
+          [(ngModel)]="currentUser"
+          (onChange)="onUserChange($event.value)"
           styleClass="role-selector"
-          aria-label="เลือก Role ผู้ใช้งาน"
-        ></p-select>
+          placeholder="เลือกผู้ใช้งาน"
+          aria-label="เลือกผู้ใช้งานเพื่อทดสอบ"
+        >
+          <ng-template let-user pTemplate="selectedItem">
+            <div class="flex align-items-center gap-2" *ngIf="user">
+              <i [class]="user.is_staff ? 'pi pi-id-card' : 'pi pi-user'"></i>
+              <div>{{ user.full_name }}</div>
+            </div>
+          </ng-template>
+          <ng-template let-user pTemplate="item">
+              <div class="flex align-items-center gap-2">
+                  <i [class]="user.is_staff ? 'pi pi-id-card' : 'pi pi-user'"></i>
+                  <div>{{ user.role_label }}</div>
+              </div>
+          </ng-template>
+        </p-select>
       </div>
     </ng-template>
   </p-toolbar>
 
-  <main class="vms-content" [class.floor-active]="!!selectedFloor">
-    <section class="search-section">
-      <p-inputGroup class="floating-search-bar">
-        <span class="p-inputgroup-addon search-addon">
-          <i class="pi pi-search"></i>
-        </span>
-        <input
-          pInputText
-          type="text"
-          [placeholder]="!selectedFloor ? 'ค้นหาอาคารหรือพื้นที่...' : 'ค้นหาในชั้น ' + selectedFloor.floor + '...'"
-          aria-label="ค้นหาอาคารหรือสถานที่"
-        />
-      </p-inputGroup>
-    </section>
-
-    <ng-container *ngIf="!isLoading; else loadingState">
-      <p-card *ngIf="!selectedFloor" styleClass="overview-card">
-        <ng-template pTemplate="content">
-          <div class="overview-body">
-            <div class="overview__canvas">
-              <app-building-view
-                [floors]="buildingData.floors"
-                [activeFloor]="lastActiveFloor"
-                (floorSelected)="onFloorSelected($event)">
-              </app-building-view>
-            </div>
-            <div class="overview__copy">
-              <h1>{{ buildingData.buildingName || 'สำรวจอาคารเรียนรวมวิศวกรรมศาสตร์' }}</h1>
-              <p>
-                หมุนดูแปลนอาคารก่อนเลือกชั้นที่ต้องการเข้าใช้งาน และบันทึกรายละเอียดไว้สำหรับการจำลอง
-                การเข้าออกในระบบ Fastpass
-              </p>
-            </div>
-          </div>
-        </ng-template>
-      </p-card>
-
-      <p-card *ngIf="selectedFloor" styleClass="floor-card">
-        <ng-template pTemplate="content">
-          <div class="floor-explorer">
-            <div class="floor-explorer__back-row">
-              <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
-                <i class="pi pi-arrow-left"></i>
-                <span>กลับไปเลือกอาคาร</span>
-              </button>
-            </div>
-          <div class="floor-explorer__content">
-              <div class="floor-explorer__canvas">
-                <app-floor-plan
-                  [floorData]="selectedFloor"
-                  [floors]="buildingData.floors"
-                  [activeFloorValue]="selectedFloorValue"
-                  (floorChange)="onFloorPlanFloorChange($event)"
-                ></app-floor-plan>
-              </div>
-            </div>
-          </div>
-        </ng-template>
-      </p-card>
+  <main class="vms-content">
+    <!-- Map-only view: แสดงเฉพาะเมื่อ viewMode === 'map' -->
+    <ng-container *ngIf="viewMode === 'map'">
+      <app-map-view
+        [buildingData]="buildingData"
+        (buildingSelected)="onBuildingSelected($event)"
+      ></app-map-view>
     </ng-container>
-
-    <ng-template #loadingState>
-      <div class="loading-state">
-        <p-progressSpinner styleClass="loading-spinner"></p-progressSpinner>
-        <span>กำลังโหลดข้อมูลอาคาร...</span>
-      </div>
-    </ng-template>
   </main>
 
   <ng-template #floorWorkspace>
