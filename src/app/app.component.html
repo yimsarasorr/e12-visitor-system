@@ -41,9 +41,9 @@
     </ng-template>
   </p-toolbar>
 
-  <main class="vms-content">
+  <main class="vms-content" [class.map-mode]="viewMode === 'map'">
     <ng-container [ngSwitch]="viewMode">
-      
+
       <app-map-view *ngSwitchCase="'map'"></app-map-view>
       
       <ng-container *ngSwitchCase="'building'">

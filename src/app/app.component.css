@@ -105,6 +105,12 @@
   gap: 2.5rem;
 }
 
+.vms-content.map-mode {
+  padding: 0;
+  gap: 0;
+  background: #e5e7eb;
+}
+
 .search-section {
   display: flex;
   justify-content: center;
