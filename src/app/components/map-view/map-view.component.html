@@ -1,9 +1,9 @@
 <div class="map-container">
   <div id="map"></div>
-
+  
   <div class="fab-container">
-    <div class="geohash-badge" *ngIf="userGeoHash">
-      📍 {{ userGeoHash }}
-    </div>
+    <button class="location-fab" (click)="focusOnUser()" title="ตำแหน่งปัจจุบัน">
+      <i class="pi pi-map-marker"></i>
+    </button>
   </div>
 </div>
