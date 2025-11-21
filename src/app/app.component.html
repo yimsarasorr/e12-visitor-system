@@ -31,10 +31,10 @@
             </div>
           </ng-template>
           <ng-template let-user pTemplate="item">
-              <div class="flex align-items-center gap-2">
-                  <i [class]="user.is_staff ? 'pi pi-id-card' : 'pi pi-user'"></i>
-                  <div>{{ user.role_label }}</div>
-              </div>
+            <div class="flex align-items-center gap-2">
+              <i [class]="user.is_staff ? 'pi pi-id-card' : 'pi pi-user'"></i>
+              <div>{{ user.role_label }}</div>
+            </div>
           </ng-template>
         </p-select>
       </div>
@@ -42,60 +42,51 @@
   </p-toolbar>
 
   <main class="vms-content">
-    <!-- Map view -->
-    <ng-container *ngIf="viewMode === 'map'">
-      <app-map-view
-        [buildingData]="buildingData"
-        (buildingSelected)="onBuildingSelected($event)"
-      ></app-map-view>
-    </ng-container>
+    <ng-container [ngSwitch]="viewMode">
+      
+      <app-map-view *ngSwitchCase="'map'"></app-map-view>
+      
+      <ng-container *ngSwitchCase="'building'">
+         <div class="building-selection">
+            <button type="button" class="back-to-map-btn" (click)="resetToBuildingOverview()">
+              <i class="pi pi-arrow-left"></i> กลับไปแผนที่
+            </button>
 
-    <!-- Building overview (เลือกชั้น) -->
-    <ng-container *ngIf="viewMode === 'building'">
-      <div class="building-selection">
-        <button type="button" class="back-to-map-btn" (click)="resetToBuildingOverview()">
-          <i class="pi pi-arrow-left"></i> กลับไปแผนที่
-        </button>
+            <div class="selection-canvas">
+              <app-building-view
+                [floors]="buildingData.floors"
+                [activeFloor]="lastActiveFloor"
+                (floorSelected)="onFloorDropdownChange($event)"
+              ></app-building-view>
+            </div>
 
-        <div class="selection-canvas">
-          <app-building-view
+            <div class="selection-copy">
+              <h2>{{ buildingData.buildingName }}</h2>
+              <p>เลือกชั้นที่ต้องการเพื่อเข้าชม</p>
+            </div>
+         </div>
+      </ng-container>
+
+      <div *ngSwitchCase="'floor'" class="floor-plan-content">
+         <div class="floor-explorer__back-row">
+            <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
+              <i class="pi pi-arrow-left"></i>
+              <span>กลับไปเลือกชั้น</span>
+            </button>
+         </div>
+
+         <app-floor-plan
+            [floorData]="selectedFloor"
             [floors]="buildingData.floors"
-            [activeFloor]="lastActiveFloor"
-            (floorSelected)="onFloorDropdownChange($event)"
-          ></app-building-view>
-        </div>
-
-        <div class="selection-copy">
-          <h2>{{ buildingData.buildingName }}</h2>
-          <p>เลือกชั้นที่ต้องการเพื่อเข้าชม</p>
-        </div>
+            [activeFloorValue]="selectedFloorValue"
+            (floorChange)="onFloorDropdownChange($event)"
+         ></app-floor-plan>
       </div>
-    </ng-container>
 
-    <!-- Floor plan view -->
-    <ng-container *ngIf="viewMode === 'floor'">
-      <div class="floor-plan-content">
-        <div class="floor-explorer__back-row">
-          <button type="button" class="toolbar-back" (click)="resetToBuildingOverview()">
-            <i class="pi pi-arrow-left"></i>
-            <span>กลับไปเลือกชั้น</span>
-          </button>
-        </div>
-
-        <app-floor-plan
-          [floorData]="selectedFloor"
-          [floors]="buildingData.floors"
-          [activeFloorValue]="selectedFloorValue"
-          (floorChange)="onFloorPlanFloorChange($event)"
-        ></app-floor-plan>
-      </div>
     </ng-container>
   </main>
 
-  <!-- bottom sheet เฉพาะเมื่ออยู่ในมุมมอง floor -->
-  <ng-container *ngIf="viewMode === 'floor'">
-    <app-bottom-sheet></app-bottom-sheet>
-  </ng-container>
+  <app-bottom-sheet></app-bottom-sheet>
 
   <footer class="vms-footer">
     <button pButton pRipple type="button" class="p-button-text footer-button active">

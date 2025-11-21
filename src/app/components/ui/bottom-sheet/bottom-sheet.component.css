@@ -1,56 +1,86 @@
 :host {
-  --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
-  --sheet-transition: 0.35s cubic-bezier(0.4, 0.15, 0.1, 0.99);
-}
-
-.global-bottom-sheet {
+  --sheet-bg: #ffffff;
+  --sheet-radius: 24px;
+  --handle-height: 30px;
+  --peek-height: 80px;
+  --default-height: 45vh;
+  --expanded-height: calc(100vh - var(--footer-height) - 60px);
+  --transition-curve: cubic-bezier(0.25, 1, 0.5, 1);
   position: fixed;
+  bottom: var(--footer-height);
   left: 0;
   right: 0;
-  /* เริ่มต้นให้ซ่อนลงไปข้างล่าง */
-  bottom: calc(-100% - var(--footer-height)); 
-  
-  background: white;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-  z-index: 1500; /* อยู่ระหว่าง Content กับ Footer */
-  
-  transition: bottom 0.3s ease, height var(--sheet-transition);
-  
-  /* ความสูงพื้นฐาน */
-  height: 40vh; 
+  z-index: 2000;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
+  height: calc(100% - var(--footer-height));
 }
 
-/* เมื่อแสดงผล (ดันขึ้นมาอยู่เหนือ Footer) */
-.global-bottom-sheet:not(.sheet-hidden) {
-  bottom: var(--footer-height);
-}
-
-/* States */
-.state-peek { height: 18vh !important; }
-.state-default { height: 40vh !important; }
-.state-expanded { height: 85vh !important; }
-
-/* Header */
-.sheet-header {
+.sheet-container {
+  background: var(--sheet-bg);
+  border-radius: var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.1);
   width: 100%;
-  padding: 1rem 0;
+  pointer-events: auto;
   display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: height 0.4s var(--transition-curve);
+  will-change: height;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* --- States --- */
+.sheet-container.state-hidden {
+  height: 0 !important;
+  transform: translateY(100%);
+}
+
+.sheet-container.state-peek {
+  height: var(--peek-height);
+}
+
+.sheet-container.state-default {
+  height: var(--default-height);
+}
+
+.sheet-container.state-expanded {
+  height: var(--expanded-height);
+}
+
+/* --- Handle --- */
+.sheet-header {
+  height: var(--handle-height);
+  width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: center;
   cursor: grab;
+  touch-action: none;
+  background: var(--sheet-bg);
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(0,0,0,0.03);
 }
+
+.sheet-header:active {
+  cursor: grabbing;
+}
+
 .sheet-grabber {
-  width: 48px;
-  height: 6px;
-  background: #cbd5e1;
+  width: 36px;
+  height: 4px;
+  background-color: #cbd5e1;
   border-radius: 10px;
 }
 
+/* --- Content --- */
 .sheet-content {
   flex: 1;
   overflow-y: auto;
   padding: 0;
+  overscroll-behavior: contain;
+  background: #fff;
 }

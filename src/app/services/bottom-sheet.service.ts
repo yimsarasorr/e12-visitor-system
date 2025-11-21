@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 // กำหนดประเภทเนื้อหาที่จะโชว์
-export type SheetMode = 'building-list' | 'access-list' | 'building-detail' | 'hidden';
+export type SheetMode = 'building-list' | 'access-list' | 'building-detail' | 'hidden' | 'location-detail';
 
 // โครงสร้างข้อมูลที่จะส่งมา
 export interface SheetData {
@@ -22,6 +22,10 @@ export class BottomSheetService {
   // State ความสูง: ให้ Component อื่นสั่งยืด/หดได้ถ้าต้องการ
   private expansionStateSubject = new BehaviorSubject<'peek' | 'default' | 'expanded'>('default');
   public expansionState$ = this.expansionStateSubject.asObservable();
+
+  // เพิ่ม Subject สำหรับส่ง Action กลับไปยัง AppComponent (เช่น กดปุ่ม "เข้าสู่อาคาร")
+  private actionSubject = new Subject<{ action: string, payload?: any }>();
+  public action$ = this.actionSubject.asObservable();
 
   // --- Actions ---
 
@@ -50,5 +54,16 @@ export class BottomSheetService {
   /** Helper: เปิดหน้ารายชื่อห้อง (สำหรับ Floor Plan) */
   showAccessList(rooms: any[]) {
     this.open('access-list', rooms, 'พื้นที่ที่เข้าถึงได้');
+  }
+
+  /** Helper: เปิดหน้ารายละเอียดสถานที่ (สำหรับ Map) */
+  showLocationDetail(locationData: any) {
+    this.open('location-detail', locationData);
+    this.setExpansionState('peek'); // เริ่มต้นแบบโผล่นิดเดียวเหมือน Google Maps
+  }
+
+  /** ฟังก์ชันส่ง Action (เช่น กดปุ่ม Enter Building) */
+  triggerAction(action: string, payload?: any) {
+    this.actionSubject.next({ action, payload });
   }
 }

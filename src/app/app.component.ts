@@ -21,7 +21,7 @@ import { take, Observable } from 'rxjs'; // 1. ต้องมี Observable
 // 2. Import Services ที่เราจะใช้
 import { AuthService, UserProfile } from './services/auth.service';
 import { FloorplanInteractionService } from './services/floorplan/floorplan-interaction.service';
-import { AccessListComponent } from './components/access-list/access-list.component'; // 1. Import Component ใหม่
+import { BottomSheetService } from './services/bottom-sheet.service';
 
 type SheetState = 'peek' | 'default' | 'expanded';
 
@@ -89,6 +89,7 @@ export class App implements OnInit {
   private buildingDataService = inject(BuildingDataService);
   private authService = inject(AuthService);
   private interactionService = inject(FloorplanInteractionService);
+  private bottomSheetService = inject(BottomSheetService); // Inject BottomSheetService
   // สำหรับตรวจจับการเปลี่ยนแปลงเมื่อสลับ view
   private cdr = inject(ChangeDetectorRef);
   // ถ้าต้องการ DOM manipulation ในอนาคต
@@ -102,6 +103,16 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.loadBuilding('E12');
+    // 1. เริ่มต้นแค่ set viewMode เป็น map
+    this.viewMode = 'map';
+
+    // 2. รอฟังคำสั่งว่า User เลือกตึกไหน (จาก Bottom Sheet หรือ Map)
+    this.bottomSheetService.action$.subscribe(event => {
+      if (event.action === 'enter-building') {
+        // ได้ ID ตึกมา -> เปลี่ยนหน้า
+        this.onBuildingSelected(event.payload);
+      }
+    });
 
     // Optional: เลือก user ตัวอย่างตอนเริ่ม (ถ้ามี)
     this.availableUsers$.pipe(take(1)).subscribe(users => {
@@ -146,17 +157,45 @@ export class App implements OnInit {
 
   // 3. ฟังก์ชันเมื่อเลือกตึกจาก Map
   onBuildingSelected(buildingId: string): void {
-    if (!buildingId) return;
-    // โหลดข้อมูลตึกที่เลือก (รองรับตึกอื่น ๆ ด้วย)
+    console.log('Entering building:', buildingId);
     this.loadBuilding(buildingId);
-    // เคลียร์การเลือกชั้นเดิม และไปยังหน้าเลือกชั้น (Building View)
-    this.selectedFloorIndex = null;
-    this.selectedFloorValue = null;
-    this.lastActiveFloor = null;
     this.viewMode = 'building';
+    // เมื่อเข้าหน้าตึก สั่งปิด Sheet รายชื่อตึกไปก่อน
+    this.bottomSheetService.close();
   }
 
-  onFloorDropdownChange(floorNumber: number): void {
+  // ถ้าเรียกมาจาก dropdown (หรือจาก component อื่น) ให้ normalize แล้วใช้ selectFloor
+  onFloorDropdownChange(value: any): void {
+    const floorNumber =
+      typeof value === 'number'
+        ? value
+        : value && (value.floor ?? value.floor_number ?? value.value);
+
+    if (typeof floorNumber === 'number' && !Number.isNaN(floorNumber)) {
+      this.selectFloor(floorNumber);
+    }
+
+    this.viewMode = 'floor';
+
+    // หน้า Floor Plan: ให้โชว์ Access List และ Default เป็น Half Screen
+    setTimeout(() => {
+      this.bottomSheetService.showAccessList([]);
+      this.bottomSheetService.setExpansionState('default');
+    }, 100);
+  }
+
+  // ถูกเรียกจาก building-view
+  onFloorSelected(floorNumber: number): void {
+    this.selectFloor(floorNumber);
+  }
+
+  // ถูกเรียกจาก floor-plan (event name อาจต่างกัน) — ให้รองรับด้วย
+  onFloorPlanFloorChange(floorNumber: number): void {
+    this.selectFloor(floorNumber);
+  }
+
+  // กลางเดียวสำหรับการเลือกชั้น
+  private selectFloor(floorNumber: number): void {
     const index = this.buildingData.floors.findIndex((f: any) => f.floor === floorNumber);
     if (index === -1) return;
 
@@ -164,29 +203,22 @@ export class App implements OnInit {
     this.selectedFloorIndex = index;
     this.selectedFloorValue = floorNumber;
 
-    // 4. เมื่อเลือกชั้น ให้เปลี่ยนมุมมองเป็นหน้า Floor
+    // ไปยังหน้า Floor
     this.viewMode = 'floor';
-    // บังคับตรวจจับการเปลี่ยนแปลงเพื่อให้ UI อัพเดตทันที
     this.cdr.detectChanges();
   }
 
   // 5. ฟังก์ชันกลับ (Back Button) - ปรับให้รองรับการนำทางระหว่างมุมมอง
   resetToBuildingOverview(): void {
-     if (this.viewMode === 'floor') {
-       // จาก Floor กลับไป Building view และเคลียร์การเลือกชั้น
-       this.viewMode = 'building';
-       this.selectedFloorIndex = null;
-       this.selectedFloorValue = null;
-     } else if (this.viewMode === 'building') {
-       // จาก Building กลับไป Map
-       this.viewMode = 'map';
-       this.selectedFloorIndex = null;
-       this.selectedFloorValue = null;
-     } else {
-       // ถ้าอยู่ใน map ให้ยังคงเป็น map (ไม่มีอะไรต้องทำ)
-       this.viewMode = 'map';
-     }
-   }
+    if (this.viewMode === 'floor') {
+      this.viewMode = 'building';
+      this.bottomSheetService.close();
+    } else {
+      // กลับไปหน้า Map
+      this.viewMode = 'map';
+      // ไม่ต้องสั่งเปิด Sheet ที่นี่ ให้ MapComponent จัดการเอง
+    }
+  }
 
   get selectedFloor(): any | null {
     if (this.selectedFloorIndex === null) return null;

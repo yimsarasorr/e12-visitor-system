@@ -1,31 +1,74 @@
 <div 
-  class="global-bottom-sheet"
-  [class.sheet-hidden]="currentData.mode === 'hidden'"
-  [class.state-peek]="currentState === 'peek'"
-  [class.state-default]="currentState === 'default'"
-  [class.state-expanded]="currentState === 'expanded'"
+  class="sheet-container"
+  [ngClass]="'state-' + currentState"
+  #sheet
 >
   <div 
     class="sheet-header"
-    (click)="toggleState()"
+    (mousedown)="onTouchStart($event)"
     (touchstart)="onTouchStart($event)"
-    (touchmove)="onTouchMove($event)"
-    (touchend)="onTouchEnd($event)"
+    (window:mousemove)="onTouchMove($event)"
+    (window:touchmove)="onTouchMove($event)"
+    (window:mouseup)="onTouchEnd()"
+    (window:touchend)="onTouchEnd()"
   >
     <div class="sheet-grabber"></div>
   </div>
 
   <div class="sheet-content">
     
-    @if (currentData.mode === 'access-list') {
-       <app-access-list></app-access-list>
+    @if (currentData.mode === 'building-list') {
+       <div class="p-3">
+         <div class="flex align-items-center justify-content-between mb-2 px-2">
+            <h3 class="m-0 text-lg font-bold text-900">{{ currentData.title }}</h3>
+            <span class="text-sm text-500 bg-gray-100 px-2 py-1 border-round">
+                {{ currentData.data?.length || 0 }} แห่ง
+            </span>
+         </div>
+
+         <div class="flex flex-column gap-2">
+            <div *ngFor="let item of currentData.data" 
+                 class="flex align-items-center p-3 border-1 border-gray-100 border-round-xl bg-white hover:surface-50 cursor-pointer transition-colors"
+                 (click)="selectBuilding(item)">
+                
+                <div class="w-3rem h-3rem flex align-items-center justify-content-center bg-blue-50 text-blue-600 border-circle mr-3">
+                    <i class="pi pi-building text-xl"></i>
+                </div>
+                
+                <div class="flex-1">
+                    <div class="font-bold text-gray-800 mb-1">{{ item.name }}</div>
+                    <div class="text-xs text-gray-500">{{ item.description }}</div>
+                </div>
+            </div>
+         </div>
+       </div>
     }
 
-    @if (currentData.mode === 'building-list') {
-       <div style="padding: 20px;">
-         <h3>{{ currentData.title }}</h3>
-         <p>รายการตึก (Mockup)...</p>
+    @if (currentData.mode === 'location-detail' && currentData.data) {
+      <div class="p-4">
+         <div class="flex justify-content-between align-items-start mb-3">
+            <div>
+              <h2 class="text-xl font-bold m-0 mb-1">{{ currentData.data.name }}</h2>
+              <span class="text-600 text-sm">{{ currentData.data.description }}</span>
+            </div>
+            <button pButton icon="pi pi-times" class="p-button-rounded p-button-text" 
+                    (click)="backToList()"></button>
          </div>
+         
+         <div class="flex gap-2 mt-3">
+            <button pButton label="เข้าสู่อาคาร (3D)" icon="pi pi-box" 
+                    class="flex-1 p-button-primary" 
+                    (click)="selectBuilding(currentData.data)">
+            </button>
+            <button pButton label="นำทาง" icon="pi pi-directions" 
+                    class="flex-1 p-button-outlined">
+            </button>
+         </div>
+      </div>
+    }
+
+    @if (currentData.mode === 'access-list') {
+       <app-access-list></app-access-list>
     }
 
   </div>

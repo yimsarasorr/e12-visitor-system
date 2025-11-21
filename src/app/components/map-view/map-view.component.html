@@ -6,41 +6,4 @@
       📍 {{ userGeoHash }}
     </div>
   </div>
-
-  <div class="map-bottom-sheet" [class.expanded]="isSheetExpanded">
-    <div class="sheet-handle" (click)="isSheetExpanded = !isSheetExpanded"></div>
-    
-    <div class="sheet-content" *ngIf="selectedLocation; else listContent">
-      <div class="location-header">
-          <button class="back-btn" (click)="selectedLocation = null">
-            <i class="pi pi-arrow-left"></i>
-          </button>
-          <div>
-            <h3>{{ selectedLocation.name }}</h3>
-            <small class="text-gray">พิกัด: {{ selectedLocation.latlng[0].toFixed(4) }}, {{ selectedLocation.latlng[1].toFixed(4) }}</small>
-          </div>
-      </div>
-
-      <div class="location-preview" *ngIf="selectedLocation.has3DModel">
-         <app-building-view [floors]="buildingData?.floors || []" [activeFloor]="null"></app-building-view>
-         <div class="preview-overlay">
-            <button (click)="enterBuilding()" class="enter-btn">
-               <i class="pi pi-sign-in"></i> เข้าสู่อาคาร
-            </button>
-         </div>
-      </div>
-    </div>
-
-    <ng-template #listContent>
-      <div class="location-list">
-        <div class="list-item" *ngFor="let t of targets" (click)="selectLocation(t)">
-           <div class="item-icon">🏢</div>
-           <div class="item-info">
-              <div class="item-name">{{ t.name }}</div>
-              <div class="item-desc">{{ t.description }}</div>
-           </div>
-        </div>
-      </div>
-    </ng-template>
-  </div>
 </div>

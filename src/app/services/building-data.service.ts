@@ -65,19 +65,13 @@ export class BuildingDataService {
         }
 
         const rows = response.data || [];
-        return rows.map((item: any) => {
-          const floorsField = item.floors;
-          const floorNumber = Array.isArray(floorsField)
-            ? floorsField[0]?.floor_number ?? 0
-            : floorsField?.floor_number ?? 0;
-
-          return {
-            id: item.id,
-            name: item.name,
-            type: item.type,
-            floor_number: floorNumber
-          } as Asset;
-        });
+        return rows.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          // ใช้ property floors โดยตรง (fallback เป็น 0)
+          floor_number: item.floors?.floor_number || 0
+        } as Asset));
       }),
       catchError(err => {
         console.error('Catch Error in getAssetDetails:', err);
