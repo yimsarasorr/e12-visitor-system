@@ -12,9 +12,10 @@
 .vms-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh; /* ✅ ฟิกซ์ความสูงไปเลย */
   width: 100%;
   background: linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
+  overflow: hidden; /* กัน Scrollbar ซ้อน */
 }
 
 .vms-header {
@@ -103,6 +104,36 @@
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+}
+
+.back-to-map-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 99px;
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+  z-index: 10; /* ให้ลอยเหนือ Canvas */
+  position: relative;
+}
+
+.back-to-map-btn:hover {
+  background-color: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.back-to-map-btn i {
+  font-size: 0.9rem;
+  color: #2563eb;
 }
 
 .vms-content.map-mode {
@@ -403,18 +434,28 @@
 }
 
 @media (max-width: 600px) {
-  .overview__canvas,
-  .floor-explorer__canvas {
-    border-radius: 22px;
+  /* ลบส่วนลด Padding/Logo/Subtitle ออก เพื่อให้ Header ขนาดเท่าเดิมตามที่คุณต้องการ */
+
+  /* แต่ยังต้องบีบ Dropdown เพื่อกันล้นจอ เพราะ Logo ใหญ่กินที่แล้ว */
+  :host ::ng-deep .role-selector.p-select {
+    max-width: 140px; 
   }
 
-  .overview__copy h1 {
-    font-size: clamp(1.45rem, 4vw + 1rem, 1.9rem);
+  :host ::ng-deep .role-selector.p-select .p-select-label {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .toolbar-back {
-    width: 100%;
-    justify-content: center;
+  :host ::ng-deep .role-selector.p-select .p-select-trigger {
+    width: 1.5rem;
+  }
+  
+  /* ซ่อนปุ่มกระดิ่งเพื่อประหยัดที่ */
+  .header-action {
+    display: none; 
   }
 }
 
@@ -495,4 +536,16 @@
 .bottom-sheet-content app-access-list {
   flex: 1 1 auto;
   display: block;
+}
+
+.floor-plan-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;            /* ยืดเต็มพื้นที่ของแม่ (vms-content) */
+  height: 100%;       /* บังคับความสูง */
+  width: 100%;
+  position: relative;
+  overflow: hidden;   /* กันล้น */
+  padding-bottom: 90px; 
+  box-sizing: border-box; /* สำคัญ เพื่อให้ padding ไม่ขยายความสูง */
 }
