@@ -33,10 +33,11 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
     async ngOnInit() {
         if (!isPlatformBrowser(this.platformId)) return;
-        
+
         // ส่งรายการตึกไปที่ Bottom Sheet
         this.bottomSheetService.open('building-list', this.targets, 'สถานที่แนะนำ (KMITL)');
-        this.bottomSheetService.setExpansionState('peek');
+        // ❌ ลบบรรทัดนี้ทิ้งครับ! (เพราะมันไปทับคำสั่งของ App Component ที่สั่งให้เป็น Default)
+        // this.bottomSheetService.setExpansionState('peek');
     }
 
     async ngAfterViewInit() {
@@ -66,11 +67,23 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
 
         this.targets.forEach(target => {
             const marker = this.L.marker(target.latlng, { icon }).addTo(this.map);
-            marker.on('click', () => {
+            
+            // ✅ แก้ไขตรงนี้: รับค่า 'e' (event) เข้ามา
+            marker.on('click', (e: any) => {
+                // 🛑 สั่งหยุดไม่ให้ Event ทะลุไปถึง App Component (ตัวการสำคัญ!)
+                this.L.DomEvent.stopPropagation(e.originalEvent);
+
                 this.map.flyTo(target.latlng, 18, { duration: 1 });
                 this.bottomSheetService.open('location-detail', target);
-                this.bottomSheetService.setExpansionState('peek');
+                
+                // สั่งให้เด้งเป็น Default (State 2)
+                this.bottomSheetService.setExpansionState('default');
             });
+        });
+        
+        // เพิ่ม: ถ้าขยับแมพ (ลาก/ซูม) ให้หุบ Sheet ลง
+        this.map.on('movestart', () => {
+             this.bottomSheetService.setExpansionState('peek');
         });
         
         setTimeout(() => { this.map.invalidateSize(); }, 200);

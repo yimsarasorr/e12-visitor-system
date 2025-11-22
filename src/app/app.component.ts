@@ -69,7 +69,15 @@ export class App implements OnInit {
 
   // 2. เพิ่ม State ควบคุมมุมมอง
   // เริ่มต้นที่หน้า Map
-  public viewMode: 'map' | 'building' | 'floor' = 'map'; 
+  public viewMode: 'map' | 'building' | 'floor' = 'map';
+
+  // ✅ [ส่วนที่ต้องเพิ่ม 1] : ข้อมูลตึกสำหรับแสดงในหน้า Map
+  public mockBuildings = [
+    { id: 'E12', name: 'อาคารเรียนรวม 12 ชั้น (E12)', description: 'ศูนย์รวมห้องปฏิบัติการวิศวกรรม' },
+    { id: 'kmitl_it', name: 'คณะเทคโนโลยีสารสนเทศ (IT)', description: 'ตึกกระจกริมน้ำ' },
+    { id: 'kmitl_cl', name: 'สำนักหอสมุดกลาง (CL)', description: 'ศูนย์การเรียนรู้' },
+    { id: 'kmitl_hall', name: 'หอประชุมเจ้าพระยาสุรวงษ์ฯ', description: 'หอประชุมใหญ่ สจล.' }
+  ];
 
   // 3. เพิ่ม Properties ที่หายไปกลับมา (สำหรับ prepareBuildingData)
   private readonly totalFloors = 12;
@@ -103,8 +111,13 @@ export class App implements OnInit {
 
   ngOnInit(): void {
     this.loadBuilding('E12');
-    // 1. เริ่มต้นแค่ set viewMode เป็น map
+
+    // เริ่มต้น: หน้า Map + เปิด List ตึก + ความสูง Default (ครึ่งจอ)
     this.viewMode = 'map';
+    this.bottomSheetService.open('building-list', this.mockBuildings, 'อาคารในบริเวณ');
+    
+    // ✅ ต้องมีบรรทัดนี้ (และ Map ต้องไม่มาแก้ทับ)
+    this.bottomSheetService.setExpansionState('default'); 
 
     // 2. รอฟังคำสั่งว่า User เลือกตึกไหน (จาก Bottom Sheet หรือ Map)
     this.bottomSheetService.action$.subscribe(event => {
@@ -122,6 +135,12 @@ export class App implements OnInit {
         this.onUserChange(users[idx]);
       }
     });
+  }
+
+  // ✅ [ส่วนที่ต้องเพิ่ม 3] : ฟังก์ชันหุบ Sheet เมื่อแตะพื้นหลัง
+  onContentInteraction(): void {
+    // เมื่อ User แตะที่ Map หรือ พื้นที่ว่าง ให้หุบ Sheet ลง
+    this.bottomSheetService.setExpansionState('peek');
   }
 
   /**
