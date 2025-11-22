@@ -68,11 +68,15 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
         this.targets.forEach(target => {
             const marker = this.L.marker(target.latlng, { icon }).addTo(this.map);
             
-            marker.on('click', () => {
+            // ✅ แก้ไขตรงนี้: รับค่า 'e' (event) เข้ามา
+            marker.on('click', (e: any) => {
+                // 🛑 สั่งหยุดไม่ให้ Event ทะลุไปถึง App Component (ตัวการสำคัญ!)
+                this.L.DomEvent.stopPropagation(e.originalEvent);
+
                 this.map.flyTo(target.latlng, 18, { duration: 1 });
                 this.bottomSheetService.open('location-detail', target);
                 
-                // ✅ แก้ตรงนี้: สั่งให้เด้งขึ้นมาครึ่งจอ (Default)
+                // สั่งให้เด้งเป็น Default (State 2)
                 this.bottomSheetService.setExpansionState('default');
             });
         });
