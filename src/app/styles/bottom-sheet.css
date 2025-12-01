@@ -1,0 +1,88 @@
+.access-bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--footer-height);
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -20px 45px rgba(15, 23, 42, 0.22);
+  transition: height var(--sheet-transition), transform var(--sheet-transition);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1600;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.access-bottom-sheet.sheet-state-peek {
+  height: 3.5rem;
+}
+
+.access-bottom-sheet.sheet-state-default {
+  height: clamp(32vh, 46vh, 520px);
+}
+
+.access-bottom-sheet.sheet-state-expanded {
+  height: min(88vh, calc(100vh - var(--footer-height)));
+}
+
+.access-bottom-sheet.sheet-state-peek .bottom-sheet-content {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.bottom-sheet-header {
+  width: 100%;
+  padding: 0.65rem 0 0.9rem;
+  display: flex;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  background: #fff;
+}
+
+.bottom-sheet-header:active {
+  cursor: grabbing;
+}
+
+.bottom-sheet-grabber {
+  width: 56px;
+  height: 6px;
+  background-color: #cbd5e1;
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.bottom-sheet-header:active .bottom-sheet-grabber {
+  background-color: #94a3b8;
+}
+
+.bottom-sheet-content {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-sheet-content app-access-list {
+  flex: 1 1 auto;
+  display: block;
+}
+
+.floor-plan-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 90px;
+  box-sizing: border-box;
+}
