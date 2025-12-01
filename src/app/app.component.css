@@ -1,36 +1,79 @@
 :host {
   font-family: 'Prompt', 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: #0f172a;
-}
-
-:host,
-:host ::ng-deep body {
+  
+  /* ความสูง Footer */
   --footer-height: calc(4.5rem + env(safe-area-inset-bottom));
+  /* ความสูง Header (ประมาณการจาก Logo 44px + Padding) */
+  --header-height: 80px; 
+  
   --sheet-transition: 0.35s cubic-bezier(0.4, 0.15, 0.1, 0.99);
 }
 
+/* 1. Layout ไม่ต้องเป็น Flex แล้ว ให้เป็นพื้นหลังเฉยๆ */
 .vms-layout {
-  display: flex;
-  flex-direction: column;
-  height: 100vh; /* ✅ ฟิกซ์ความสูงไปเลย */
+  display: block; 
   width: 100%;
+  height: 100vh; 
   background: linear-gradient(180deg, #f8fbff 0%, #eef2f7 100%);
-  overflow: hidden; /* กัน Scrollbar ซ้อน */
+  overflow: hidden; /* ซ่อน Scroll ของตัวแม่ */
 }
 
+/* 2. Header ลอยตัว (Float) ติดด้านบน */
 .vms-header {
+  position: fixed; /* ✅ Key Point: ลอยเหมือน Bottom Sheet */
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  z-index: 1100; /* อยู่เหนือ Content */
+  
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0 1.5rem; /* ปรับ Padding ให้ Fit กับความสูง */
   background: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
   backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  border: none;
-  gap: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* เพิ่มเงาบางๆ ให้รู้ว่าลอย */
+}
+
+/* ✅ Footer ลอยตัว (Float) */
+.vms-footer {
+  position: fixed;   /* ให้ลอยเหนือทุกอย่าง */
+  bottom: 0;         /* ติดขอบล่าง */
+  left: 0;
+  right: 0;
+  height: var(--footer-height);
+  
+  z-index: 1100;     /* ต้องมากกว่าเนื้อหา (Content) แต่ระวังอย่าไปทับ Bottom Sheet (1600) */
+  
+  /* Flex/Grid Layout ของเดิม */
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  
+  /* พื้นหลังและสี */
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  gap: 0.35rem;
+  
+  /* เงา (Optional) ให้ดูเหมือนลอยขึ้นมา */
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.1); 
+}
+
+/* 4. Content ยืดเต็มจอ แต่เว้นที่ให้ Header/Footer */
+.vms-content {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  
+  /* เว้นที่หัวท้าย ให้เนื้อหาไม่โดนบัง */
+  padding-top: var(--header-height);
+  padding-bottom: var(--footer-height); /* สำคัญ: ดันเนื้อหาขึ้นจาก Footer */
+  
+  box-sizing: border-box;
 }
 
 .vms-header .p-toolbar-group-start,
