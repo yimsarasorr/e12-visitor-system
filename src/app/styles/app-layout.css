@@ -115,7 +115,7 @@
 .vms-content {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   box-sizing: border-box;
   padding: calc(var(--header-height) + 0.75rem) clamp(1rem, 4vw, 3rem) calc(var(--footer-height) + 2rem);
   display: flex;
