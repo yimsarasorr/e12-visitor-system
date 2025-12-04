@@ -3,8 +3,8 @@
   --sheet-radius: 24px;
   --handle-height: 30px;
   --peek-height: 80px;
-  --default-height: 45vh;
-  --expanded-height: calc(100vh - var(--footer-height) - 60px);
+  --default-height: 58vh;
+  --expanded-height: calc(100vh - var(--footer-height) - 24px);
   --transition-curve: cubic-bezier(0.25, 1, 0.5, 1);
   position: fixed;
   bottom: var(--footer-height);
